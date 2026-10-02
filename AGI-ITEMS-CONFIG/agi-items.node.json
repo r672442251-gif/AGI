@@ -45,7 +45,8 @@
       "note": "Настройки проекта отдельным элементом (299): APP/PLATFORM/DESIGN-CONFIG, режим архитектора, двери /api/settings/*. Источник настроек для всех элементов узла.",
       "kind": "core",
       "port": 24685,
-      "address": "config"
+      "address": "config",
+      "github": "r672442251-gif/agi-config"
     },
     {
       "id": "design",
