@@ -73,7 +73,8 @@
       "required": false,
       "note": "Сайт узла: что видит посетитель в корне домена. Заменяется другим репозиторием с тем же договором (OWN-SERVICE-PROPS.json), убрать нельзя.",
       "kind": "user",
-      "address": "root"
+      "address": "root",
+      "github": "r672442251-gif/agi-root"
     },
     {
       "id": "blocks",
