@@ -225,4 +225,18 @@ if (!answered) {
   process.exit(1)
 }
 stage(`родился: порт ${port}, ${health} → ${answered}`)
+// 374/379 (владелец 2026-10-02: «разработать процедуру как именно мы повторяем этот процесс с новыми когда создаем нажатием кнопку
+// add AGI ITEMS»): у узла есть ключ GitHub — новорождённый получает свой приватный репозиторий той же дверью «создать недостающие»,
+// что и все элементы (уже связанные она пропускает без единого запроса к GitHub; предел GitHub — та же остановка и отсчёт). Ядро —
+// по петле машины, порт из logs/runtime.json. Нет ключа или ядро молчит — рождение не страдает: элемент ждёт на странице GitHub.
+if (existsSync(join(ROOT, 'data', 'node', 'github', '.env'))) {
+  try {
+    const rt = JSON.parse(readFileSync(join(ROOT, 'logs', 'runtime.json'), 'utf8'))
+    const core = `http://${typeof rt.hostname === 'string' && rt.hostname ? rt.hostname : 'localhost'}:${rt.port}`
+    const r = await fetch(`${core}/api/node/github-backup`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'create' }), signal: AbortSignal.timeout(15_000) })
+    stage(r.ok ? 'репозиторий GitHub: узел создаёт его (ход — «Строительство → GitHub»)' : `репозиторий GitHub: ядро ответило ${r.status} — создайте его кнопкой на «Строительство → GitHub»`)
+  } catch {
+    stage('репозиторий GitHub: ядро не ответило — создайте его кнопкой на «Строительство → GitHub»')
+  }
+}
 say(`===BIRTH_OK=== ${id} port ${port}`)

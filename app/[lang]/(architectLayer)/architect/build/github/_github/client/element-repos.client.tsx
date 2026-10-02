@@ -5,6 +5,7 @@ import { ExternalLink, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { H3 } from "@/components/ui/typography"
 import type { ElementReposWords } from "../words/element-repos.i18n"
+import { RateCountdown, RowCountdown } from "./rate-countdown.client"
 import { terminalLink } from "@/app/[lang]/(architectLayer)/architect/kits/_agent-kit/core/client/terminal-paste.mjs"
 
 // РЕПОЗИТОРИИ ВСЕХ AGI ITEMS НА СТРАНИЦЕ «СТРОИТЕЛЬСТВО → GITHUB» (шаг 374-2, 374-3).
@@ -29,7 +30,7 @@ type Row = {
   commit: string | null
   update: { target: string | null; base: string | null; ownWork: boolean; available: boolean; merging: boolean } | null
 }
-type Job = { running: boolean; startedAt?: string; finishedAt?: string; results?: Array<{ id: string; ok: boolean; error?: string; detail?: string; repo?: string }>; map?: { pushed: boolean; reason?: string; ok: boolean } }
+type Job = { running: boolean; retryAt?: string; interrupted?: boolean; current?: string; done?: number; total?: number; startedAt?: string; finishedAt?: string; results?: Array<{ id: string; ok: boolean; error?: string; detail?: string; repo?: string }>; map?: { pushed: boolean; reason?: string; ok: boolean } }
 type State = { token: boolean; elements: Row[]; job: Job }
 
 const when = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString() : "")
@@ -38,6 +39,8 @@ export function ElementRepos({ words: w, lang }: { words: ElementReposWords; lan
   const [state, setState] = useState<State | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [note, setNote] = useState<Record<string, string>>({})
+  // 379: время истекло — табло уступает место кнопке (перерисовка без запроса).
+  const [, setTick] = useState(0)
 
   const load = useCallback(async () => {
     try {
@@ -102,13 +105,16 @@ export function ElementRepos({ words: w, lang }: { words: ElementReposWords; lan
   if (!state) return null
   const job = state.job
   const done = job.results ?? []
+  // 379: GitHub велел подождать — до этого времени кнопка неактивна и время названо (таймеров нет: проверка при открытии и «Обновить»).
+  const waitMs = job.retryAt ? Date.parse(job.retryAt) : 0
+  const waiting = waitMs > Date.now()
   return (
     <section className="flex flex-col gap-3" data-element-repos={state.elements.length}>
       <H3 variant="ui">{w.title}</H3>
       <p className="text-sm text-muted-foreground">{w.intro}</p>
       {!state.token && <p className="text-sm text-destructive" role="alert">{w.noToken}</p>}
       <div className="flex flex-wrap items-center gap-2">
-        {state.token && (
+        {state.token && !waiting && (
           <Button type="button" size="sm" onClick={create} disabled={busy !== null || job.running} data-element-repos-create>
             {job.running || busy === "*" ? w.creating : w.create}
           </Button>
@@ -118,7 +124,22 @@ export function ElementRepos({ words: w, lang }: { words: ElementReposWords; lan
           {w.refresh}
         </Button>
       </div>
-      {job.running && <p className="text-sm" role="status">{w.jobRunning.replace("{at}", when(job.startedAt))}</p>}
+      {job.running && (
+        <p className="text-sm" role="status" data-element-repos-current={job.current ?? ""}>
+          {w.jobRunning.replace("{at}", when(job.startedAt))}
+          {job.current ? ` ${w.jobNow.replace("{id}", state.elements.find((e) => e.id === job.current)?.address ?? job.current).replace("{done}", String(job.done ?? 0)).replace("{total}", String(job.total ?? 0))}` : ""}
+        </p>
+      )}
+      {waiting && (
+        <RateCountdown
+          until={waitMs}
+          startedAt={job.finishedAt ? Date.parse(job.finishedAt) : Date.now()}
+          title={w.rateTitle}
+          note={w.rateWait.replace("{at}", new Date(waitMs).toLocaleTimeString())}
+          onDone={() => setTick((n) => n + 1)}
+        />
+      )}
+      {job.interrupted && <p className="text-sm text-destructive" role="status" data-element-repos-interrupted>{w.jobInterrupted.replace("{at}", when(job.startedAt))}</p>}
       {!job.running && job.finishedAt && (
         <div className="flex flex-col gap-1 text-sm" role="status" data-element-repos-job>
           <p>{w.jobDone.replace("{at}", when(job.finishedAt)).replace("{ok}", String(done.filter((r) => r.ok).length)).replace("{all}", String(done.length))}</p>
@@ -156,7 +177,16 @@ export function ElementRepos({ words: w, lang }: { words: ElementReposWords; lan
                     ) : (
                       <span className="text-muted-foreground">{w.noRepo}</span>
                     )}
-                    {failed && <p className="text-destructive">{why(failed.error)}</p>}
+                    {failed && (failed.error === "rate-limited" || failed.error === "postponed") && waiting ? (
+                      <RowCountdown
+                        until={waitMs}
+                        startedAt={job.finishedAt ? Date.parse(job.finishedAt) : Date.now()}
+                        label={w.rowWait}
+                        onDone={() => setTick((n) => n + 1)}
+                      />
+                    ) : (
+                      failed && <p className="text-destructive">{why(failed.error)}</p>
+                    )}
                     {/* 377: дословный ответ GitHub (ключ скрыт) — по нему причина видна сразу, без догадок. */}
                     {failed?.detail && <p className="break-all font-mono text-xs text-muted-foreground" data-element-repo-detail>{failed.repo ? `${failed.repo}: ` : ""}{failed.detail}</p>}
                   </td>

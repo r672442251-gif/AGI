@@ -23,6 +23,11 @@ export type ElementReposWords = {
   pushedNow: string
   jobRunning: string
   jobDone: string
+  jobInterrupted: string
+  jobNow: string
+  rateWait: string
+  rateTitle: string
+  rowWait: string
   mapPushed: string
   mapAuthor: string
   mapFailed: string
@@ -61,6 +66,11 @@ const DICT: Record<"en" | "ru", ElementReposWords> = {
     pushedNow: "Sent: {commit}",
     jobRunning: "The node is creating repositories (started {at}). Press Refresh to see the progress.",
     jobDone: "Last run {at}: created or found {ok} of {all}.",
+    rateTitle: "GitHub allows creating repositories again in",
+    rowWait: "waits for GitHub",
+    rateWait: "GitHub temporarily stopped this account from creating repositories (a secondary rate limit). The node stopped at once — GitHub warns that requests during the block can get an integration banned. When the clock reaches zero (at {at}) the button «Create the missing repositories» comes back; what was already created is picked up.",
+    jobNow: "Now: {id} (done {done} of {total}). A required item first fetches its whole history from Fractera — a few minutes each.",
+    jobInterrupted: "The run started {at} was interrupted — the node restarted while it worked. Press «Create the missing repositories» again: what was already created is picked up.",
     mapPushed: "The project map went to your fork — a clone of the fork restores every item.",
     mapAuthor: "This is the author's node: the map stays here (the original Fractera repository is never written).",
     mapFailed: "The project map was not sent to the fork:",
@@ -86,7 +96,8 @@ const DICT: Record<"en" | "ru", ElementReposWords> = {
       "push-failed": "sending failed",
       "github-unreachable": "GitHub did not answer",
       "no-folder": "no folder on this computer",
-      "rate-limited": "GitHub asked to slow down (a limit on creating repositories) — wait a few minutes and press «Create the missing repositories» again",
+      "rate-limited": "GitHub temporarily stopped creating repositories for this account (secondary rate limit)",
+      postponed: "postponed — the run stopped at GitHub's limit",
       "no-commits": "no commits yet",
       "not-connected": "no repository or key",
       dirty: "there are uncommitted changes",
@@ -123,6 +134,11 @@ const DICT: Record<"en" | "ru", ElementReposWords> = {
     pushedNow: "Отправлено: {commit}",
     jobRunning: "Узел создаёт репозитории (начал в {at}). Нажмите «Обновить», чтобы увидеть ход.",
     jobDone: "Последний запуск {at}: создано или найдено {ok} из {all}.",
+    rateTitle: "GitHub снова разрешит создавать репозитории через",
+    rowWait: "ждёт GitHub",
+    rateWait: "GitHub временно запретил этому аккаунту создавать репозитории (вторичный предел). Узел сразу остановился — GitHub предупреждает, что запросы во время запрета могут закончиться блокировкой. Когда отсчёт дойдёт до нуля (в {at}), вернётся кнопка «Создать недостающие репозитории»; уже созданное будет подхвачено.",
+    jobNow: "Сейчас: {id} (готово {done} из {total}). Обязательный элемент сначала дотягивает всю свою историю с Fractera — по несколько минут на каждый.",
+    jobInterrupted: "Запуск {at} прерван — узел перезапустился во время работы. Нажмите «Создать недостающие репозитории» ещё раз: уже созданное будет подхвачено.",
     mapPushed: "Карта проекта отправлена в ваш форк — клон форка восстановит каждый элемент.",
     mapAuthor: "Это узел автора: карта остаётся здесь (оригинальный репозиторий Fractera не пишется никогда).",
     mapFailed: "Карта проекта не отправлена в форк:",
@@ -148,7 +164,8 @@ const DICT: Record<"en" | "ru", ElementReposWords> = {
       "push-failed": "отправка не удалась",
       "github-unreachable": "GitHub не ответил",
       "no-folder": "на этом компьютере нет папки",
-      "rate-limited": "GitHub попросил притормозить (предел на создание репозиториев) — подождите несколько минут и снова нажмите «Создать недостающие репозитории»",
+      "rate-limited": "GitHub временно запретил этому аккаунту создавать репозитории (вторичный предел)",
+      postponed: "отложено — запуск остановлен на пределе GitHub",
       "no-commits": "ещё нет коммитов",
       "not-connected": "нет репозитория или ключа",
       dirty: "есть незакоммиченные правки",

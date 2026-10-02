@@ -10,10 +10,18 @@ import { saveNodeMap, type NodeMapResult } from "@/lib/agi-items/node-map"
 // 🔒 Действие — только в ответ на человека (сохранение ключа или кнопка «Создать репозитории»): таймеров и повторов нет.
 
 const FILE = join(process.cwd(), "data", "node", "github", "repos.json")
-export type ReposJob = { running: boolean; startedAt?: string; finishedAt?: string; results?: RepoResult[]; map?: NodeMapResult }
+const g = globalThis as unknown as { __agiReposJob?: Promise<void> | null }
+export type ReposJob = { running: boolean; retryAt?: string; pid?: number; current?: string; done?: number; total?: number; interrupted?: boolean; startedAt?: string; finishedAt?: string; results?: RepoResult[]; map?: NodeMapResult }
 
+// 🔒 «ИДЁТ» ИЗМЕРЯЕТСЯ, А НЕ ПОМНИТСЯ (378, тот же закон, что у замка развёртываний 337): работа живёт в процессе ядра, и
+// перезапуск ядра (пересборка, pm2) её убивает. Запись несёт `pid`; «идёт» — только если это тот же живой процесс и работа в нём
+// действительно идёт. Иначе — «прервано», и кнопка снова доступна. ✗ Mac 2026-10-02: «Узел создаёт репозитории (начал в 22:41)»
+// висело, хотя ядро пересобирали после старта.
 export function readReposJob(): ReposJob {
-  try { return JSON.parse(readFileSync(FILE, "utf8")) as ReposJob } catch { return { running: false } }
+  let job: ReposJob
+  try { job = JSON.parse(readFileSync(FILE, "utf8")) as ReposJob } catch { return { running: false } }
+  if (job.running && (job.pid !== process.pid || !g.__agiReposJob)) return { ...job, running: false, interrupted: true }
+  return job
 }
 
 function write(job: ReposJob) {
@@ -23,17 +31,18 @@ function write(job: ReposJob) {
   renameSync(tmp, FILE)
 }
 
-const g = globalThis as unknown as { __agiReposJob?: Promise<void> | null }
-
 /** Запустить создание репозиториев, если оно не идёт. Возвращает сразу. */
 export function startReposJob(): ReposJob {
   if (g.__agiReposJob) return readReposJob()
+  const prev = readReposJob()
+  if (prev.retryAt && Date.parse(prev.retryAt) > Date.now()) return prev
   const startedAt = new Date().toISOString()
-  write({ running: true, startedAt })
+  write({ running: true, pid: process.pid, startedAt })
   g.__agiReposJob = (async () => {
     try {
-      const r = await createAllElementRepos()
-      write({ running: false, startedAt, finishedAt: new Date().toISOString(), results: r.results, map: saveNodeMap() })
+      // 378: ход виден — какой элемент сейчас и сколько готово (владелец ждал «4 минуты» вслепую).
+      const r = await createAllElementRepos((current, done, total) => write({ running: true, pid: process.pid, startedAt, current, done, total }))
+      write({ running: false, startedAt, finishedAt: new Date().toISOString(), results: r.results, retryAt: r.retryAt, map: saveNodeMap() })
     } catch {
       write({ running: false, startedAt, finishedAt: new Date().toISOString(), results: [] })
     } finally {

@@ -225,8 +225,15 @@ async function gh(token: string, method: string, url: string, body?: unknown) {
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(20_000),
     })
-    return { status: res.status, body: (await res.json().catch(() => null)) as Record<string, unknown> | null }
-  } catch { return { status: 0, body: null } }
+    const retry = Number(res.headers.get("retry-after"))
+    const reset = Number(res.headers.get("x-ratelimit-reset"))
+    const left = res.headers.get("x-ratelimit-remaining")
+    // 379: когда можно повторять — по заголовкам GitHub; без них — минута (первоисточник: docs.github.com, «Best practices»).
+    const retryAt = Number.isFinite(retry) && retry > 0 ? Date.now() + retry * 1000
+      : left === "0" && Number.isFinite(reset) && reset > 0 ? reset * 1000
+      : Date.now() + 60_000
+    return { status: res.status, body: (await res.json().catch(() => null)) as Record<string, unknown> | null, retryAt }
+  } catch { return { status: 0, body: null, retryAt: Date.now() + 60_000 } }
 }
 
 /** Имя репозитория элемента: `<имя форка узла>-<адрес>` (решение плана 374, названо владельцу). */
@@ -242,7 +249,7 @@ function repoName(id: string): string {
   return `${project}-${address}`.replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 100)
 }
 
-export type RepoResult = { id: string; ok: boolean; repo?: string; error?: string; created?: boolean; detail?: string }
+export type RepoResult = { id: string; ok: boolean; repo?: string; error?: string; created?: boolean; detail?: string; retryAt?: string }
 
 /** Последние строки вывода git без ключа — на экран как есть (377: «отправка не удалась» без причины не лечится). */
 function gitDetail(out: string, token: string): string {
@@ -263,7 +270,7 @@ export async function createElementRepo(id: string, token: string, login: string
   if (!created) {
     const said = typeof made.body?.message === "string" ? made.body.message.slice(0, 300) : `HTTP ${made.status}`
     // 377: 403 бывает и вторичным пределом GitHub на создание («secondary rate limit»), а не только нехваткой прав.
-    if (made.status === 403 && /rate limit/i.test(said)) return { id, ok: false, error: "rate-limited", detail: said }
+    if ((made.status === 403 || made.status === 429) && /rate limit/i.test(said)) return { id, ok: false, error: "rate-limited", detail: said, retryAt: new Date(made.retryAt).toISOString() }
     if (made.status === 403 || made.status === 401) return { id, ok: false, error: "no-create-right", detail: said }
     if (made.status === 0) return { id, ok: false, error: "github-unreachable" }
     // 422 — имя занято: берём, только если репозиторий пуст (повтор после обрыва), иначе — отказ, чужое не трогаем.
@@ -287,7 +294,11 @@ export async function createElementRepo(id: string, token: string, login: string
 }
 
 /** Все элементы реестра: создать недостающие репозитории (ключ — свой элемента, иначе общий узла). */
-export async function createAllElementRepos(): Promise<{ ok: boolean; error?: string; results: RepoResult[] }> {
+// 🔒 379 — ПЕРВОИСТОЧНИК (docs.github.com, «Best practices for using the REST API»): мутирующие запросы — «serially», «wait at least
+// one second between each request»; отказ по пределу — не повторять раньше `retry-after` (иначе минута), и «Continuing to make
+// requests while you are rate limited may result in the banning of your integration». ✗ Mac 2026-10-02: первый отказ «secondary rate
+// limit», а узел постучался ещё пятью запросами. Теперь первый отказ по пределу останавливает запуск, остальным — «отложено».
+export async function createAllElementRepos(onStep?: (id: string, done: number, total: number) => void): Promise<{ ok: boolean; error?: string; results: RepoResult[]; retryAt?: string }> {
   let ids: string[] = []
   try {
     ids = ((JSON.parse(readFileSync(paths.REGISTRY_FILE, "utf8")) as { services?: RegistryEntry[] }).services ?? []).map((e) => e.id)
@@ -295,6 +306,7 @@ export async function createAllElementRepos(): Promise<{ ok: boolean; error?: st
   const results: RepoResult[] = []
   const logins = new Map<string, string | null>()
   for (const id of ids) {
+    onStep?.(id, results.length, ids.length)
     const { token } = tokenFor(id)
     if (!token) { results.push({ id, ok: false, error: "no-token" }); continue }
     if (!logins.has(token)) {
@@ -303,7 +315,15 @@ export async function createAllElementRepos(): Promise<{ ok: boolean; error?: st
     }
     const login = logins.get(token)
     if (!login) { results.push({ id, ok: false, error: "token-rejected" }); continue }
-    results.push(await createElementRepo(id, token, login))
+    const st = readStored(id)
+    const r = await createElementRepo(id, token, login)
+    results.push(r)
+    if (r.error === "rate-limited") {
+      for (const rest of ids.slice(results.length)) results.push({ id: rest, ok: false, error: "postponed", retryAt: r.retryAt })
+      return { ok: false, results, retryAt: r.retryAt }
+    }
+    // Пауза между мутирующими запросами — только если запрос к GitHub был (уже связанный элемент пропускается без запроса).
+    if (!st.repo) await new Promise((res) => setTimeout(res, 1500))
   }
   return { ok: results.every((r) => r.ok), results }
 }
