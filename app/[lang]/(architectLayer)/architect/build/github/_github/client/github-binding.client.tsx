@@ -17,7 +17,8 @@ import type { GithubWords } from "../words/github.i18n"
 // тревожным цветом. Узкий ключ выглядит исправным ровно до дня публикации.
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? ""
-const TOKENS_URL = "https://github.com/settings/personal-access-tokens"
+// 376: ссылка — создание КЛАССИЧЕСКОГО ключа (та же, что на странице GitHub элемента, проверена владельцем в 319-5).
+const TOKENS_URL = "https://github.com/settings/tokens/new"
 // Предупреждаем за две недели: продлить ключ — дело на минуту, но только пока он ещё работает.
 const SOON_MS = 14 * 24 * 60 * 60 * 1000
 
@@ -65,7 +66,10 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
-export function GithubBinding({ lang, words }: { lang: string; words: GithubWords }) {
+// 375 (владелец 2026-10-02, Mac: «если репозиторий уже есть то вверху кнопка добавить новую репетитору точно не нужно»): кнопка
+// мастера подключения приходит пропсом и показывается, только пока у узла НЕТ своего репозитория (`own`). Состояние меряется у git
+// при каждом открытии — удалил или отвязал репозиторий, кнопка вернётся.
+export function GithubBinding({ lang, words, connect }: { lang: string; words: GithubWords; connect?: React.ReactNode }) {
   const api = `${BASE}/${lang}/architect/build/github/api`
   const [state, setState] = useState<State | null | "forbidden">(null)
   const [access, setAccess] = useState<Access | null>(null)
@@ -130,6 +134,7 @@ export function GithubBinding({ lang, words }: { lang: string; words: GithubWord
 
   return (
     <div className="my-6 flex flex-col gap-4" data-github-binding data-state={b.state}>
+      {b.state !== "own" && connect}
       <p className="text-muted-foreground text-sm">{words.intro}</p>
 
       {/* ── с каким репозиторием работает узел ─────────────────────────────── */}

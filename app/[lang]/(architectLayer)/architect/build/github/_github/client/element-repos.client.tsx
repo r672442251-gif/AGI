@@ -29,7 +29,7 @@ type Row = {
   commit: string | null
   update: { target: string | null; base: string | null; ownWork: boolean; available: boolean; merging: boolean } | null
 }
-type Job = { running: boolean; startedAt?: string; finishedAt?: string; results?: Array<{ id: string; ok: boolean; error?: string }>; map?: { pushed: boolean; reason?: string; ok: boolean } }
+type Job = { running: boolean; startedAt?: string; finishedAt?: string; results?: Array<{ id: string; ok: boolean; error?: string; detail?: string; repo?: string }>; map?: { pushed: boolean; reason?: string; ok: boolean } }
 type State = { token: boolean; elements: Row[]; job: Job }
 
 const when = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString() : "")
@@ -157,6 +157,8 @@ export function ElementRepos({ words: w, lang }: { words: ElementReposWords; lan
                       <span className="text-muted-foreground">{w.noRepo}</span>
                     )}
                     {failed && <p className="text-destructive">{why(failed.error)}</p>}
+                    {/* 377: дословный ответ GitHub (ключ скрыт) — по нему причина видна сразу, без догадок. */}
+                    {failed?.detail && <p className="break-all font-mono text-xs text-muted-foreground" data-element-repo-detail>{failed.repo ? `${failed.repo}: ` : ""}{failed.detail}</p>}
                   </td>
                   <td className="px-3 py-2">{row.tokenSource === "element" ? w.keyElement : row.tokenSource === "node" ? w.keyNode : w.keyNone}</td>
                   <td className="px-3 py-2">

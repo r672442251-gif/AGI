@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process"
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import paths from "@/lib/agi-items/paths.cjs"
+import { NODE_WRITES } from "@/lib/agi-items/element-code-state"
 import { checkAccess } from "@/app/[lang]/(architectLayer)/architect/build/github/_github/server/github.cjs"
 import { SHAPE, storedToken } from "@/app/[lang]/(architectLayer)/architect/build/github/_github/server/token.cjs"
 
@@ -60,10 +61,13 @@ function readToken(id: string): string | null {
 // «1 незакоммиченная правка», и выгрузка требовала бы автокоммита шума сборки.
 const BUILD_OWNED = /(^|\/)(tsconfig\.json|next-env\.d\.ts)$/
 
-/** Незакоммиченные правки, кроме следа сборки. */
+/** Незакоммиченные правки, кроме следа сборки и файлов, которые пишет сам узел (377: тот же список, что у «Развёртываний»:
+ *  `DESIGN-CONFIG/`, `.install-stamp.json` … — ✗ на Mac у auth, data, root стояла «1 правка», которой не было, и «Закоммитить и
+ *  отправить» унесла бы машинные файлы узла в репозиторий элемента). */
 function changes(dir: string): string[] {
-  return git(dir, ["status", "--porcelain"]).out.split(/\r?\n/).filter(Boolean)
-    .map((l) => l.slice(3).trim()).filter((f) => !BUILD_OWNED.test(f))
+  return git(dir, ["status", "--porcelain", "--untracked-files=all"]).out.split(/\r?\n/).filter(Boolean)
+    .map((l) => l.slice(3).trim().replace(/^"|"$/g, ""))
+    .filter((f) => !BUILD_OWNED.test(f) && !NODE_WRITES.some((re) => re.test(f)))
 }
 
 function git(dir: string, args: string[]) {
@@ -176,7 +180,7 @@ export function pushElement(id: string, commit: boolean) {
     const ident = ["-c", "user.name=Fractera node", "-c", "user.email=node@fractera.local"]
     // Коммитятся правки, но не след сборки (он остаётся незакоммиченным, как и был). 🛑 `next-env.d.ts` в пути НЕ
     // называть: он в `.gitignore` элемента, и одно его упоминание делает `git add` кодом 1 (замерено 319-5).
-    if (git(dir, ["add", "-A", "--", ".", ":(exclude)tsconfig.json"]).rc !== 0) {
+    if (git(dir, ["add", "-A", "--", ...pending]).rc !== 0) {
       return { ok: false as const, error: "commit-failed" }
     }
     if (git(dir, [...ident, "commit", "--quiet", "-m", `export ${new Date().toISOString()}`]).rc !== 0) {
@@ -238,7 +242,13 @@ function repoName(id: string): string {
   return `${project}-${address}`.replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 100)
 }
 
-export type RepoResult = { id: string; ok: boolean; repo?: string; error?: string; created?: boolean }
+export type RepoResult = { id: string; ok: boolean; repo?: string; error?: string; created?: boolean; detail?: string }
+
+/** Последние строки вывода git без ключа — на экран как есть (377: «отправка не удалась» без причины не лечится). */
+function gitDetail(out: string, token: string): string {
+  return out.split(token).join("***").replace(/x-access-token:[^@\s]+@/g, "x-access-token:***@")
+    .split(/\r?\n/).map((l) => l.trim()).filter(Boolean).slice(-3).join(" · ").slice(0, 400)
+}
 
 /** Создать приватный репозиторий элемента в аккаунте ключа и выгрузить туда всю историю. Уже связанный — пропуск. */
 export async function createElementRepo(id: string, token: string, login: string): Promise<RepoResult> {
@@ -251,21 +261,25 @@ export async function createElementRepo(id: string, token: string, login: string
   const made = await gh(token, "POST", "/user/repos", { name, private: true, auto_init: false, description: `AGI ITEM «${id}» of a Fractera node` })
   const created = made.status === 201
   if (!created) {
-    if (made.status === 403 || made.status === 401) return { id, ok: false, error: "no-create-right" }
+    const said = typeof made.body?.message === "string" ? made.body.message.slice(0, 300) : `HTTP ${made.status}`
+    // 377: 403 бывает и вторичным пределом GitHub на создание («secondary rate limit»), а не только нехваткой прав.
+    if (made.status === 403 && /rate limit/i.test(said)) return { id, ok: false, error: "rate-limited", detail: said }
+    if (made.status === 403 || made.status === 401) return { id, ok: false, error: "no-create-right", detail: said }
     if (made.status === 0) return { id, ok: false, error: "github-unreachable" }
     // 422 — имя занято: берём, только если репозиторий пуст (повтор после обрыва), иначе — отказ, чужое не трогаем.
     const have = await gh(token, "GET", `/repos/${full}`)
-    if (have.status !== 200 || Number(have.body?.size ?? 1) !== 0) return { id, ok: false, error: "name-taken", repo: full }
+    if (have.status !== 200 || Number(have.body?.size ?? 1) !== 0) return { id, ok: false, error: "name-taken", repo: full, detail: said }
   }
   // Обязательные элементы установщик клонирует с глубиной 1 — мелкую историю GitHub в новый репозиторий не примет.
   if (git(dir, ["rev-parse", "--is-shallow-repository"]).out.trim() === "true") {
-    if (git(dir, ["fetch", "--quiet", "--unshallow"]).rc !== 0) return { id, ok: false, error: "unshallow-failed", repo: full }
+    const u = git(dir, ["fetch", "--quiet", "--unshallow"])
+    if (u.rc !== 0) return { id, ok: false, error: "unshallow-failed", repo: full, detail: gitDetail(u.out, token) }
   }
   if (git(dir, ["rev-parse", "--verify", "--quiet", "HEAD"]).rc !== 0) return { id, ok: false, error: "no-commits", repo: full }
   const r = git(dir, ["push", `https://x-access-token:${token}@github.com/${full}.git`, "HEAD:main"])
   if (r.rc !== 0) {
-    const error = /without `?workflow`? scope/i.test(r.out) ? "needs-workflow" : /403|denied/i.test(r.out) ? "no-write" : "push-failed"
-    return { id, ok: false, error, repo: full }
+    const error = /without `?workflow`? scope/i.test(r.out) ? "needs-workflow" : /403|denied/i.test(r.out) ? "no-write" : /not found/i.test(r.out) ? "repo-not-found" : "push-failed"
+    return { id, ok: false, error, repo: full, detail: gitDetail(r.out, token) }
   }
   const head = git(dir, ["rev-parse", "--short", "HEAD"]).out.trim()
   writeStored(id, { ...readStored(id), repo: full, login, lastPushedAt: new Date().toISOString(), lastCommit: head })

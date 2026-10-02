@@ -21,7 +21,8 @@ export type ElementCodeState = {
   pending: boolean
 }
 
-const NODE_WRITES = [/^DESIGN-CONFIG\//, /^APP-CONFIG\//, /^PLATFORM-CONFIG\//, /(^|\/)tsconfig\.json$/, /(^|\/)next-env\.d\.ts$/, /^\.install-stamp\.json$/]
+/** Файлы, которые пишет сам узел (377: тот же список читает выгрузка в GitHub — они не правки и не коммитятся). */
+export const NODE_WRITES = [/^DESIGN-CONFIG\//, /^APP-CONFIG\//, /^PLATFORM-CONFIG\//, /(^|\/)tsconfig\.json$/, /(^|\/)next-env\.d\.ts$/, /^\.install-stamp\.json$/]
 
 function git(dir: string, args: string[]): string | null {
   const r = spawnSync("git", ["-C", dir, ...args], { encoding: "utf8", windowsHide: true, timeout: 10_000 })

@@ -19,14 +19,14 @@ import { adminHref } from '../_connect/shell/admin-nav'
 // предрендерить, дать ссылкой и вернуться на неё. Переключатель внутри страницы увёл бы вкладку в
 // динамику и лишил бы каждый шаг адреса — закон о разделе экрана как маршруте.
 //
-// 🔒 КНОПКА ГОРИТ ВСЕГДА. Решение владельца 2026-09-22: репозиторий подключают и повторно — «будет
-// гореть кнопка, если пользователь вновь захочет подключить другой репозиторий». Прятать её, когда
-// привязка уже есть, значило бы объявить первое подключение единственным.
+// 🪦 «КНОПКА ГОРИТ ВСЕГДА» (решение владельца 2026-09-22) ОТМЕНЕНО ИМ ЖЕ 2026-10-02 (шаг 375, Mac): «если репозиторий уже есть
+// то вверху кнопка добавить новую репетитору точно не нужно». Кнопка уходит в островок привязки и видна, только пока у узла нет
+// своего репозитория (состояние не `own`).
 export function githubWidget(lang: string): ReactNode {
   const words = githubWords(lang)
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1.5">
+      <GithubBinding lang={lang} words={words} connect={<div className="flex flex-col gap-1.5">
         <Link
           href={`${adminHref(lang, 'project-start')}/step-1`}
           className={`${buttonVariants({ variant: 'default' })} self-start`}
@@ -35,8 +35,7 @@ export function githubWidget(lang: string): ReactNode {
           {words.connectCta}
         </Link>
         <Small>{words.connectHint}</Small>
-      </div>
-      <GithubBinding lang={lang} words={words} />
+      </div>} />
       {/* 374-2/374-3: репозитории всех AGI ITEMS — создаёт узел по ключу, отправка кнопкой. */}
       <ElementRepos words={elementReposWords(lang)} lang={lang} />
     </div>

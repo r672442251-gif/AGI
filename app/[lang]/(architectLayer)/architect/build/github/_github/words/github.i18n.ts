@@ -110,10 +110,10 @@ const DICT: Record<string, GithubWords> = {
     keyTitle: "The key",
     keyLead: "A key is what lets the node read and write this repository. It is kept on this computer only, and it is never shown again — only its last four characters.",
     keySteps: [
-      "Open GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens.",
-      "Choose «Only select repositories» and pick the repository of this node.",
-      "Repository permissions: Contents — Read and write, Metadata — Read-only. Nothing else is needed.",
-      "Pick an expiry you are willing to renew, generate the token and paste it here.",
+      "Sign in to GitHub and open the link below — it creates a classic key. If a list of keys opens, press «Generate new token» and choose «Generate new token (classic)» — not the fine-grained one.",
+      "Note — any name, e.g. «fractera node»; Expiration — the term you want.",
+      "Tick two boxes: «repo» (the node creates a private repository for every AGI ITEM and writes to it) and «workflow» (elements carry GitHub Actions files in .github/workflows — without this box GitHub refuses them). Nothing else is needed.",
+      "Press «Generate token» at the bottom, copy the key — it starts with ghp_ — and paste it here.",
     ],
     keyLabel: "GitHub token",
     keyHint: "starts with github_pat_ or ghp_",
@@ -136,7 +136,7 @@ const DICT: Record<string, GithubWords> = {
     unknown: "not known",
     writeOk: "The key can write: publishing will work.",
     writeDenied:
-      "The key can read but not write. It looks healthy right now and will fail on the day you publish — widen its permissions to Contents: Read and write, or issue a new one.",
+      "The key can read but not write. It looks healthy right now and will fail on the day you publish — create a classic key with the «repo» and «workflow» boxes and paste it.",
     expiresSoon: "The key expires soon — renew it before it stops working.",
     notChecked: "Not checked yet.",
 
@@ -184,9 +184,10 @@ const DICT: Record<string, GithubWords> = {
     keyTitle: "Ключ",
     keyLead: "Ключ — это то, чем узел читает и пишет этот репозиторий. Он хранится только на этом компьютере и больше не показывается — видны лишь четыре последних знака.",
     keySteps: [
-      "Откройте GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens.",
-      "Выберите «Only select repositories» и укажите репозиторий этого узла.",
-      "Права репозитория: Contents — Read and write, Metadata — Read-only. Больше ничего не нужно.",
+      "Войдите в GitHub и откройте ссылку ниже — она создаёт классический ключ. Если открылся список ключей, нажмите «Generate new token» и выберите «Generate new token (classic)» — не тонкий ключ.",
+      "Note — любое имя, например «fractera node»; Expiration — нужный срок.",
+      "Отметьте две галочки: «repo» (узел создаёт приватный репозиторий каждому AGI ITEM и пишет в него) и «workflow» (в элементах есть файлы GitHub Actions в .github/workflows — без этой галочки GitHub их не примет). Больше ничего не нужно.",
+      "Внизу нажмите «Generate token», скопируйте ключ — он начинается с ghp_ — и вставьте сюда.",
       "Выберите срок, который готовы продлевать, создайте токен и вставьте его сюда.",
     ],
     keyLabel: "Токен GitHub",
@@ -210,7 +211,7 @@ const DICT: Record<string, GithubWords> = {
     unknown: "неизвестно",
     writeOk: "Ключ умеет писать: публикация пройдёт.",
     writeDenied:
-      "Ключ умеет читать, но не писать. Сейчас он выглядит исправным и откажет в день публикации — расширьте права до Contents: Read and write или выпустите новый.",
+      "Ключ умеет читать, но не писать. Сейчас он выглядит исправным и откажет в день публикации — создайте классический ключ с галочками «repo» и «workflow» и вставьте его.",
     expiresSoon: "Срок ключа подходит к концу — продлите его до того, как он перестанет работать.",
     notChecked: "Ещё не проверяли.",
 
