@@ -31,7 +31,8 @@
       "required": true,
       "note": "Единственная дверь к данным. Узел не открывает файл базы сам.",
       "kind": "core",
-      "address": "data"
+      "address": "data",
+      "github": "r672442251-gif/agi-data"
     },
     {
       "id": "config",
