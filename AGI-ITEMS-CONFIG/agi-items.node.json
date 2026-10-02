@@ -1,0 +1,88 @@
+{
+  "_": "Snapshot of this node's AGI ITEMS (step 374): every item with its port, address, own domain, description and repository. Restored by the installer on a fresh clone of this fork.",
+  "services": [
+    {
+      "id": "auth",
+      "repo": "https://github.com/Fractera/fractera-auth-starter.git",
+      "version": "v1.3.22",
+      "port": 24681,
+      "provides": [
+        "session",
+        "roles",
+        "sign-in-ui"
+      ],
+      "required": true,
+      "note": "Раздающая вход ровно одна. Две авторизации на узле есть отсутствие авторизации.",
+      "kind": "core",
+      "address": "auth"
+    },
+    {
+      "id": "data",
+      "repo": "https://github.com/Fractera/fractera-data-starter.git",
+      "version": "v1.3.15",
+      "port": 24682,
+      "provides": [
+        "tables",
+        "media",
+        "vectors",
+        "service-routing"
+      ],
+      "required": true,
+      "note": "Единственная дверь к данным. Узел не открывает файл базы сам.",
+      "kind": "core",
+      "address": "data"
+    },
+    {
+      "id": "config",
+      "repo": "https://github.com/Fractera/fractera-config-starter.git",
+      "version": "v0.2.25",
+      "provides": [
+        "project-settings"
+      ],
+      "required": true,
+      "note": "Настройки проекта отдельным элементом (299): APP/PLATFORM/DESIGN-CONFIG, режим архитектора, двери /api/settings/*. Источник настроек для всех элементов узла.",
+      "kind": "core",
+      "port": 24685,
+      "address": "config"
+    },
+    {
+      "id": "design",
+      "repo": "https://github.com/Fractera/fractera-design-starter.git",
+      "version": "v0.1.4",
+      "provides": [
+        "project-design"
+      ],
+      "required": false,
+      "note": "Дизайн проекта отдельным элементом (309): цвета светлой и тёмной темы, шрифты, текст, формы, настройки блоков. После сохранения — сигнал подписчикам, и каждая служба узла перекрашивается на лету.",
+      "kind": "core",
+      "port": 24686,
+      "address": "design"
+    },
+    {
+      "id": "root",
+      "repo": "https://github.com/Fractera/fractera-root-starter.git",
+      "version": "v1.7.33",
+      "port": 24683,
+      "provides": [
+        "site"
+      ],
+      "required": false,
+      "note": "Сайт узла: что видит посетитель в корне домена. Заменяется другим репозиторием с тем же договором (OWN-SERVICE-PROPS.json), убрать нельзя.",
+      "kind": "user",
+      "address": "root"
+    },
+    {
+      "id": "blocks",
+      "repo": "https://github.com/Fractera/fractera-blocks-starter.git",
+      "version": "v0.5.21",
+      "provides": [
+        "page-blocks"
+      ],
+      "required": false,
+      "note": "Реестр блоков страниц по методологии shadcn: API (/r/*.json) и свой MCP (/mcp). Первый элемент вида user (297).",
+      "kind": "user",
+      "port": 24684,
+      "address": "blocks"
+    }
+  ]
+}
