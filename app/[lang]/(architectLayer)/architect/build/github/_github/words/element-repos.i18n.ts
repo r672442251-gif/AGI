@@ -51,8 +51,8 @@ export type ElementReposWords = {
 const DICT: Record<"en" | "ru", ElementReposWords> = {
   en: {
     title: "Repositories of the AGI ITEMS",
-    intro: "Every AGI ITEM — the required ones and yours — keeps its whole history in a private repository of your account. The node creates them itself when the key is added; a change goes there with the «Send» button (an agent sends on request, and a task from Telegram is committed and sent at once). Its own key on an item's page is stronger than this one.",
-    noToken: "There is no GitHub key yet — the items live only on this computer. Add the key above: the repositories are created right away.",
+    intro: "Every AGI ITEM — the required ones and yours — keeps its whole history in a private repository of your account. You create each one with «Create and upload» in its row — give the item a good name first if you want, the repository takes it; a change goes there with the «Send» button (an agent sends on request, and a task from Telegram is committed and sent at once). Its own key on an item's page is stronger than this one.",
+    noToken: "There is no GitHub key yet — the items live only on this computer. Add the key above, then create the repositories from the rows below.",
     create: "Create the missing repositories",
     createOne: "Create and upload",
     creating: "Creating repositories and uploading the history…",
@@ -126,8 +126,8 @@ const DICT: Record<"en" | "ru", ElementReposWords> = {
   },
   ru: {
     title: "Репозитории AGI ITEMS",
-    intro: "Каждый AGI ITEM — и обязательные, и ваши — хранит всю свою историю в приватном репозитории вашего аккаунта. Узел создаёт их сам, как только добавлен ключ; правка уезжает туда кнопкой «Отправить» (агент отправляет по вашей просьбе, а задача из Telegram коммитится и отправляется сразу). Собственный ключ на странице элемента сильнее этого.",
-    noToken: "Ключа GitHub пока нет — элементы живут только на этом компьютере. Добавьте ключ выше: репозитории создадутся сразу.",
+    intro: "Каждый AGI ITEM — и обязательные, и ваши — хранит всю свою историю в приватном репозитории вашего аккаунта. Каждый создаётся кнопкой «Создать и выгрузить» в его строке — если хотите, сначала дайте элементу хорошее имя, репозиторий получит его; правка уезжает туда кнопкой «Отправить» (агент отправляет по вашей просьбе, а задача из Telegram коммитится и отправляется сразу). Собственный ключ на странице элемента сильнее этого.",
+    noToken: "Ключа GitHub пока нет — элементы живут только на этом компьютере. Добавьте ключ выше, затем создайте репозитории из строк ниже.",
     create: "Создать недостающие репозитории",
     createOne: "Создать и выгрузить",
     creating: "Создаю репозитории и выгружаю историю…",

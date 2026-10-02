@@ -30,7 +30,11 @@ export async function GET(req: NextRequest) {
   if (denied) return denied
   const full = req.nextUrl.searchParams.get("full") === "1"
   const token = tokenState().configured
-  return NextResponse.json(full ? { ok: true, token, elements: elements(), job: readReposJob() } : { ok: true, token }, noStore)
+  if (full) return NextResponse.json({ ok: true, token, elements: elements(), job: readReposJob() }, noStore)
+  // 382 (владелец 2026-10-02: «пока есть хотя бы одна не завершенные репозиторий нам нужно показывать эту карточку»): полоса горит,
+  // пока у элемента на диске нет своего репозитория; ответ — адреса таких элементов.
+  const missing = elements().filter((e) => e.present && !e.repo).map((e) => e.address)
+  return NextResponse.json({ ok: true, token, missing }, noStore)
 }
 
 export async function POST(req: NextRequest) {

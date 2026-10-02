@@ -620,7 +620,7 @@ Dashboard) are CHANGED by the person exactly like born ones — «их отли�
 а без этих нет». Until the key every element lives only in its own local git; the key uploads the whole history afterwards.
 - **Bar** `components/node-state/github-token-alarm.client.tsx` (door `GET /api/node/github-backup`): no node key → red bar over every
   architect page, why it matters, a button straight to Build → GitHub.
-- **Key saved → repositories created** (`lib/agi-items/element-repos-job.ts` → `createAllElementRepos` in `element-github.ts`): a private
+- 🪦 **Key saved → repositories created** — cancelled by the owner 2026-10-02 (step 382) together with creation at birth: an element may still be named by its cuid; «пусть горит плашка … пользователь сам решит». Now: **«Create and upload» in the element's row, one at a time** (`element-repos-job.ts` → `createAllElementRepos(…, only)`), the bar burns while any element has no repository. Each creates a private
   `<fork name>-<address>` per element, shallow clones unshallowed first, `git push HEAD:main` with the key as a one-time URL (never in
   `git remote`). Rights (docs.github.com): create private — classic `repo` / fine-grained Administration: write; push — Contents:
   write; the template carries `.github/workflows` — `workflow`. Build → GitHub lists every element (`element-repos.client.tsx`):
