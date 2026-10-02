@@ -87,7 +87,8 @@
       "note": "Реестр блоков страниц по методологии shadcn: API (/r/*.json) и свой MCP (/mcp). Первый элемент вида user (297).",
       "kind": "user",
       "port": 24684,
-      "address": "blocks"
+      "address": "blocks",
+      "github": "r672442251-gif/agi-blocks"
     }
   ]
 }
