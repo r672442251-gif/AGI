@@ -75,7 +75,7 @@ if (git(['status', '--porcelain'], dir).out.trim()) {
   git(['add', '-A', '--', '.', ':(exclude)tsconfig.json'], dir)
   git([...ident, 'commit', '--quiet', '-m', `before import of ${target}`], dir)
 }
-const arch = git(['push', `https://x-access-token:${oldToken}@github.com/${state.repo}.git`, 'HEAD:main'], dir)
+const arch = git(['push', `https://x-access-token:${oldToken}@github.com/${state.repo}.git`, 'HEAD:refs/heads/main'], dir)
 if (arch.rc !== 0) fail(`прежняя история не выгружена в ${state.repo} — импорт остановлен, ничего не тронуто`)
 
 // 2. Новый проект.

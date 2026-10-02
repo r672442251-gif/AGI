@@ -4,6 +4,7 @@ export type ElementReposWords = {
   intro: string
   noToken: string
   create: string
+  createOne: string
   creating: string
   refresh: string
   colItem: string
@@ -28,6 +29,12 @@ export type ElementReposWords = {
   rateWait: string
   rateTitle: string
   rowWait: string
+  progressTitle: string
+  progressNote: string
+  elapsed: string
+  queued: string
+  doneOk: string
+  phases: Record<string, string>
   mapPushed: string
   mapAuthor: string
   mapFailed: string
@@ -47,6 +54,7 @@ const DICT: Record<"en" | "ru", ElementReposWords> = {
     intro: "Every AGI ITEM — the required ones and yours — keeps its whole history in a private repository of your account. The node creates them itself when the key is added; a change goes there with the «Send» button (an agent sends on request, and a task from Telegram is committed and sent at once). Its own key on an item's page is stronger than this one.",
     noToken: "There is no GitHub key yet — the items live only on this computer. Add the key above: the repositories are created right away.",
     create: "Create the missing repositories",
+    createOne: "Create and upload",
     creating: "Creating repositories and uploading the history…",
     refresh: "Refresh",
     colItem: "AGI ITEM",
@@ -68,9 +76,15 @@ const DICT: Record<"en" | "ru", ElementReposWords> = {
     jobDone: "Last run {at}: created or found {ok} of {all}.",
     rateTitle: "GitHub allows creating repositories again in",
     rowWait: "waits for GitHub",
-    rateWait: "GitHub temporarily stopped this account from creating repositories (a secondary rate limit). The node stopped at once — GitHub warns that requests during the block can get an integration banned. When the clock reaches zero (at {at}) the button «Create the missing repositories» comes back; what was already created is picked up.",
+    progressTitle: "Creating repositories: done {done} of {total}",
+    progressNote: "The page follows the work by itself while it runs. A required item first fetches its whole history from Fractera, then uploads it — a few minutes each.",
+    elapsed: "elapsed",
+    queued: "in the queue",
+    doneOk: "created and uploaded",
+    phases: { start: "starting…", create: "creating the repository on GitHub…", history: "fetching the whole history from Fractera…", upload: "uploading the history to your repository…" },
+    rateWait: "GitHub temporarily stopped this account from creating repositories (a secondary rate limit). The node stopped at once — GitHub warns that requests during the block can get an integration banned. When the clock reaches zero (at {at}) the «Create and upload» buttons come back; what was already created is picked up.",
     jobNow: "Now: {id} (done {done} of {total}). A required item first fetches its whole history from Fractera — a few minutes each.",
-    jobInterrupted: "The run started {at} was interrupted — the node restarted while it worked. Press «Create the missing repositories» again: what was already created is picked up.",
+    jobInterrupted: "The run started {at} was interrupted — the node restarted while it worked. Press «Create and upload» again: what was already created is picked up.",
     mapPushed: "The project map went to your fork — a clone of the fork restores every item.",
     mapAuthor: "This is the author's node: the map stays here (the original Fractera repository is never written).",
     mapFailed: "The project map was not sent to the fork:",
@@ -115,6 +129,7 @@ const DICT: Record<"en" | "ru", ElementReposWords> = {
     intro: "Каждый AGI ITEM — и обязательные, и ваши — хранит всю свою историю в приватном репозитории вашего аккаунта. Узел создаёт их сам, как только добавлен ключ; правка уезжает туда кнопкой «Отправить» (агент отправляет по вашей просьбе, а задача из Telegram коммитится и отправляется сразу). Собственный ключ на странице элемента сильнее этого.",
     noToken: "Ключа GitHub пока нет — элементы живут только на этом компьютере. Добавьте ключ выше: репозитории создадутся сразу.",
     create: "Создать недостающие репозитории",
+    createOne: "Создать и выгрузить",
     creating: "Создаю репозитории и выгружаю историю…",
     refresh: "Обновить",
     colItem: "AGI ITEM",
@@ -136,9 +151,15 @@ const DICT: Record<"en" | "ru", ElementReposWords> = {
     jobDone: "Последний запуск {at}: создано или найдено {ok} из {all}.",
     rateTitle: "GitHub снова разрешит создавать репозитории через",
     rowWait: "ждёт GitHub",
-    rateWait: "GitHub временно запретил этому аккаунту создавать репозитории (вторичный предел). Узел сразу остановился — GitHub предупреждает, что запросы во время запрета могут закончиться блокировкой. Когда отсчёт дойдёт до нуля (в {at}), вернётся кнопка «Создать недостающие репозитории»; уже созданное будет подхвачено.",
+    progressTitle: "Создаю репозитории: готово {done} из {total}",
+    progressNote: "Пока идёт работа, страница следит за ней сама. Обязательный элемент сначала дотягивает всю свою историю с Fractera, потом выгружает её — по несколько минут на каждый.",
+    elapsed: "прошло",
+    queued: "в очереди",
+    doneOk: "создан и выгружен",
+    phases: { start: "начинаю…", create: "создаю репозиторий на GitHub…", history: "дотягиваю всю историю с Fractera…", upload: "выгружаю историю в ваш репозиторий…" },
+    rateWait: "GitHub временно запретил этому аккаунту создавать репозитории (вторичный предел). Узел сразу остановился — GitHub предупреждает, что запросы во время запрета могут закончиться блокировкой. Когда отсчёт дойдёт до нуля (в {at}), вернутся кнопки «Создать и выгрузить»; уже созданное будет подхвачено.",
     jobNow: "Сейчас: {id} (готово {done} из {total}). Обязательный элемент сначала дотягивает всю свою историю с Fractera — по несколько минут на каждый.",
-    jobInterrupted: "Запуск {at} прерван — узел перезапустился во время работы. Нажмите «Создать недостающие репозитории» ещё раз: уже созданное будет подхвачено.",
+    jobInterrupted: "Запуск {at} прерван — узел перезапустился во время работы. Снова нажмите «Создать и выгрузить»: уже созданное будет подхвачено.",
     mapPushed: "Карта проекта отправлена в ваш форк — клон форка восстановит каждый элемент.",
     mapAuthor: "Это узел автора: карта остаётся здесь (оригинальный репозиторий Fractera не пишется никогда).",
     mapFailed: "Карта проекта не отправлена в форк:",

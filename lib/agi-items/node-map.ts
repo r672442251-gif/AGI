@@ -51,7 +51,7 @@ export function saveNodeMap(): NodeMapResult {
     const c = git(["-c", "user.name=Fractera node", "-c", "user.email=node@fractera.local", "commit", "--quiet", "-m", "AGI ITEMS map (step 374)", "--", SNAPSHOT])
     if (c.rc !== 0) return { ok: false, written, pushed: false, reason: "commit-failed" }
   }
-  const p = git(["push", `https://x-access-token:${token}@github.com/${origin.slug}.git`, `HEAD:${origin.branch || "main"}`])
+  const p = git(["push", `https://x-access-token:${token}@github.com/${origin.slug}.git`, `HEAD:refs/heads/${origin.branch || "main"}`])
   if (p.rc !== 0) return { ok: false, written, pushed: false, reason: /non-fast-forward|fetch first/i.test(p.out) ? "fork-ahead" : /403|denied/i.test(p.out) ? "no-write" : "push-failed" }
   return { ok: true, written, pushed: true }
 }

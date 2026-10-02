@@ -37,8 +37,10 @@ export async function POST(req: NextRequest) {
   if (isTemporaryPublicAddress(req)) return NextResponse.json({ ok: false, error: "temporary-address" }, { status: 403 })
   const denied = await requireRoles(req, ROLES)
   if (denied) return denied
-  const body = (await req.json().catch(() => null)) as { action?: string } | null
+  const body = (await req.json().catch(() => null)) as { action?: string; id?: string } | null
   if (body?.action !== "create") return NextResponse.json({ ok: false, error: "unknown-action" }, { status: 400 })
   if (!tokenState().configured) return NextResponse.json({ ok: false, error: "no-token" }, { status: 409, ...noStore })
-  return NextResponse.json({ ok: true, job: startReposJob() }, noStore)
+  // 381: `id` — только этот элемент (кнопка в его строке); без `id` — все недостающие (сохранение ключа, рождение элемента).
+  const only = typeof body.id === "string" && /^[a-z][a-z0-9-]{0,39}$/.test(body.id) ? body.id : undefined
+  return NextResponse.json({ ok: true, job: startReposJob(only) }, noStore)
 }
