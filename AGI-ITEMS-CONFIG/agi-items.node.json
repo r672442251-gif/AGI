@@ -14,7 +14,8 @@
       "required": true,
       "note": "Раздающая вход ровно одна. Две авторизации на узле есть отсутствие авторизации.",
       "kind": "core",
-      "address": "auth"
+      "address": "auth",
+      "github": "r672442251-gif/agi-auth"
     },
     {
       "id": "data",
