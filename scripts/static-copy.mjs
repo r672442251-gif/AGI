@@ -33,6 +33,43 @@ const say = (m) => { const l = `${new Date().toISOString()} ${m}`; console.log(l
 const save = (s) => { try { mkdirSync(join(ROOT, 'data', 'services', id), { recursive: true }); writeFileSync(STATE, JSON.stringify({ ...s, at: new Date().toISOString() }, null, 2) + '\n') } catch { /* не главное */ } }
 function fail(reason, detail = '') { say(`ОТКАЗ: ${reason} ${detail}`); save({ ok: false, reason, detail }); console.log('===COPY_FAILED==='); process.exit(1) }
 
+// `--all` (шаг 385): копия каждому адресу узла — каждому элементу, на чей порт ведёт туннель (`architect.` ведёт на ядро, его в
+// реестре нет — он пропускается сам), плюс элементам со своим доменом. Элемент, у которого прошлая копия есть, а адреса больше нет, —
+// `--remove`. По одному, не параллельно: у машины человека может быть 400 МБ свободной памяти. Сводка — `logs/static-copy-all.log`.
+if (id === '--all') {
+  const { spawnSync } = await import('node:child_process')
+  const ALL_LOG = join(ROOT, 'logs', 'static-copy-all.log')
+  const note = (m) => { const l = `${new Date().toISOString()} ${m}`; console.log(l); try { appendFileSync(ALL_LOG, l + '\n') } catch { /* не главное */ } }
+  const tok = (() => { try { return readFileSync(join(ROOT, '.env.local'), 'utf8') } catch { return '' } })().match(/^CLOUDFLARE_API_TOKEN=(.*)$/m)?.[1]?.trim()
+  const node = readJson(join(ROOT, 'logs', 'domain.json'))
+  let ports = new Set()
+  if (tok && node?.zone && node?.tunnelId) {
+    const h = { Authorization: `Bearer ${tok}` }
+    const zr = await (await fetch(`${API}/zones?name=${encodeURIComponent(node.zone)}`, { headers: h })).json().catch(() => ({}))
+    const acc = zr.result?.[0]?.account?.id
+    const ing = acc ? await (await fetch(`${API}/accounts/${acc}/cfd_tunnel/${node.tunnelId}/configurations`, { headers: h })).json().catch(() => ({})) : {}
+    for (const r of ing.result?.config?.ingress ?? []) { try { if (r.hostname) ports.add(Number(new URL(r.service).port)) } catch { /* не адрес */ } }
+  }
+  const results = []
+  for (const s of readJson(paths.REGISTRY_FILE)?.services ?? []) {
+    const st = readJson(join(paths.entryDir(s), '.install-stamp.json'))
+    const own = existsSync(join(ROOT, 'data', 'services', s.id, 'domain.json'))
+    const prev = readJson(join(ROOT, 'data', 'services', s.id, 'static-copy.json'))
+    const has = own || (st?.port && ports.has(Number(st.port)))
+    if (!has && !(prev?.ok)) continue
+    const args = has ? [s.id] : [s.id, '--remove']
+    const r = spawnSync(process.execPath, [join(ROOT, 'scripts', 'static-copy.mjs'), ...args], { cwd: ROOT, encoding: 'utf8', windowsHide: true })
+    const after = readJson(join(ROOT, 'data', 'services', s.id, 'static-copy.json'))
+    const line = has ? (after?.ok ? `${s.id}: ${after.hosts?.join(', ') ?? after.host} — ${after.files} файлов` : `${s.id}: ОТКАЗ ${after?.reason ?? r.status} ${after?.detail ?? ''}`) : `${s.id}: адреса нет — копия снята`
+    note(line)
+    results.push({ id: s.id, ok: has ? !!after?.ok : true })
+  }
+  const bad = results.filter((x) => !x.ok).length
+  note(`итог: адресов ${results.length}, отказов ${bad}`)
+  console.log(bad ? '===COPY_ALL_PARTIAL===' : '===COPY_ALL_OK===')
+  process.exit(bad ? 1 : 0)
+}
+
 const envText0 = (() => { try { return readFileSync(join(ROOT, '.env.local'), 'utf8') } catch { return '' } })()
 const token0 = envText0.match(/^CLOUDFLARE_API_TOKEN=(.*)$/m)?.[1]?.trim()
 
