@@ -644,6 +644,20 @@ Dashboard) are CHANGED by the person exactly like born ones — «их отли�
   the old history goes to the element's repository first (refused without one), the new repository is cloned with the element's own key,
   a foreign project gets passport/launcher/agent files (`repo-element.mjs`), the folders swap with the service stopped, the installer
   builds; id, port, address, domain stay. The previous folder stays in `AGI-ITEMS/.replaced/`.
+- **Step 384 (owner 2026-10-03) — the element's GitHub page.** Wording: **«GitHub token»**, never «key» (GitHub calls it a personal
+  access token; «key» stays for Cloudflare and OpenAI). «GitHub» is the FIRST page of the element's Build (`item-tree.ts`). On top — a
+  status plate from `tokenSource`/`activeTail` of `GET …/github`: green «saved to <repo> with the node's common token / own token …tail»
+  + «Send»; amber — token but no repository, «Create and upload» right there (same door as the row, 381); red — no node token. «Another
+  repository or own token» is optional: an empty token field = `tokenFor(id)`, only a typed token is stored as the element's own.
+- **Import without a token** (384-5): empty field → `tokenFor(id)`; a public repository is visible anonymously; write right — a real
+  `git push --dry-run` to a probe branch. 🔒 No write right (someone else's public repository) → `--detach`: the code and history come in,
+  `state.json` keeps `importedFrom` and NO `repo`, a typed read-only token is put back; the bar names the element, «Create and upload»
+  gives it the person's own private repository (plan «отвязать», confirmed). Public ≠ free to use — the license decides (said in (?)).
+- **Rename = repository rename** (384-4): the address door calls `renameElementRepo` → `PATCH /repos/{owner}/{repo}` only when the
+  repository bears the node-given name `<fork>-<old address>`; then `state.json`, `saveNodeMap()` (registry + fork snapshot) and the
+  folder's `origin`. A repository the person connected under their own name keeps it. GitHub refusal does not undo the element rename —
+  the reason comes back in `repo` and the settings card shows it after the page moves (sessionStorage). Source docs.github.com «Renaming a
+  repository»: pushes/clones to the old name keep working; 🛑 never create a new repository with the old name — the redirect breaks.
 
 ## Dashboard → Projects — every AGI ITEM in one table (node step 339)
 

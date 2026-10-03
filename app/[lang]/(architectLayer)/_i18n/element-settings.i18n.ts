@@ -11,7 +11,7 @@ export type ElementSettingsUi = {
     current: string; label: string; placeholder: string; attach: string; attaching: string; detach: string; detaching: string; primaryTitle: string; primaryNote: string; empty: string; add: string; loadFailed: string; note: string
     kinds: Record<"ready" | "waiting" | "taken" | "current", string>; errors: Record<string, string>
   }
-  addressCard: { current: string; label: string; free: string; "bad-shape": string; taken: string; suggest: string; renaming: string; failed: string; note: string; restart: string }
+  addressCard: { current: string; label: string; free: string; "bad-shape": string; taken: string; suggest: string; renaming: string; failed: string; note: string; restart: string; repoNote: string; repoRenamed: string; repoFailed: string }
   describeCard: { empty: string; take: string; taking: string; taken: string; takenAt: string; how: string; errors: Record<string, string> }
   address: Card
   mirror: Card
@@ -84,6 +84,9 @@ const DICT: Record<string, ElementSettingsUi> = {
       failed: "The address was not changed:",
       note: "The inner name {id} stays: the process and the data keep it. The element's folder moves under the new address, and a connected internet address moves to the new name.",
       restart: "The element will restart: its address will be unavailable for about a minute.",
+      repoNote: "Its GitHub repository, if the node named it, is renamed with it; a repository you connected under your own name keeps its name.",
+      repoRenamed: "The GitHub repository is renamed: {from} → {to}. GitHub redirects the old links itself; do not create a new repository with the old name — that breaks the redirect.",
+      repoFailed: "The element is renamed, its GitHub repository {from} is not: {reason}. Rename it on GitHub by hand or rename the element again.",
     },
     describeCard: {
       empty: "The core has no description of this element yet.",
@@ -215,6 +218,9 @@ const DICT: Record<string, ElementSettingsUi> = {
       failed: "Адрес не изменён:",
       note: "Внутреннее имя {id} остаётся: под ним живут процесс и данные. Папка элемента переезжает под новый адрес, подключённый адрес в интернете — на новое имя.",
       restart: "Элемент перезапустится: адрес будет недоступен около минуты.",
+      repoNote: "Его репозиторий GitHub, если имя ему дал узел, переименуется вместе с ним; репозиторий, подключённый вами под своим именем, имя сохранит.",
+      repoRenamed: "Репозиторий GitHub переименован: {from} → {to}. Старые ссылки GitHub перенаправляет сам; не создавайте новый репозиторий со старым именем — перенаправление сломается.",
+      repoFailed: "Элемент переименован, а его репозиторий GitHub {from} — нет: {reason}. Переименуйте его на GitHub вручную или переименуйте элемент ещё раз.",
     },
     describeCard: {
       empty: "В ядре пока нет описания этого элемента.",

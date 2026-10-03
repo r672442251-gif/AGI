@@ -1,12 +1,13 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, useRef } from "react"
 import { Check, ExternalLink, LoaderCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { H3 } from "@/components/ui/typography"
 import type { ElementReposWords } from "../words/element-repos.i18n"
 import { RateCountdown, RowCountdown } from "./rate-countdown.client"
 import { terminalLink } from "@/app/[lang]/(architectLayer)/architect/kits/_agent-kit/core/client/terminal-paste.mjs"
+import { announceGithubState } from "@/components/node-state/github-token-alarm.client"
 
 // РЕПОЗИТОРИИ ВСЕХ AGI ITEMS НА СТРАНИЦЕ «СТРОИТЕЛЬСТВО → GITHUB» (шаг 374-2, 374-3).
 //
@@ -55,6 +56,12 @@ export function ElementRepos({ words: w, lang }: { words: ElementReposWords; lan
   // спрашивает ту же дверь каждые 2,5 с и показывает ход; работа кончилась — вопросы прекращаются. Узел от этого не делает ничего
   // нового: опрос только читает состояние запуска, который начал человек.
   const running = state?.job.running === true
+  // 383: работа кончилась (создание, выгрузка) — полоса над слоем спрашивает дверь заново.
+  const wasRunning = useRef(false)
+  useEffect(() => {
+    if (wasRunning.current && !running) announceGithubState()
+    wasRunning.current = running
+  }, [running])
   useEffect(() => {
     if (!running) return
     const t = window.setTimeout(() => void load(), 2500)
@@ -74,6 +81,7 @@ export function ElementRepos({ words: w, lang }: { words: ElementReposWords; lan
     setBusy(id)
     await fetch(`${BASE}/api/node/github-backup`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "create", id }) }).catch(() => null)
     await load()
+    announceGithubState()
     setBusy(null)
   }
 

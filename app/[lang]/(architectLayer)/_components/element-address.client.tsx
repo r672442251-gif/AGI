@@ -13,6 +13,10 @@ import type { ElementSettingsUi } from "../_i18n/element-settings.i18n"
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? ""
 
 type Check = { ok: boolean; reason?: "bad-shape" | "taken"; suggestions?: string[] }
+type RepoRename = { state: "none" | "kept" | "renamed" | "failed"; from?: string; to?: string; reason?: string }
+// 384-4: итог переименования репозитория переживает переход на новый адрес страницы — в sessionStorage этой вкладки (удобство
+// одного зрителя; нет хранилища — строки просто нет, переименование от этого не зависит).
+const repoKey = (id: string) => `fractera:repo-rename:${id}`
 
 export function ElementAddress({ id, lang, ui, current, internet }: {
   id: string
@@ -28,6 +32,13 @@ export function ElementAddress({ id, lang, ui, current, internet }: {
   const [error, setError] = useState<string | null>(null)
   const value = name.trim().toLowerCase()
   const same = value === current
+  const [repoDone, setRepoDone] = useState<RepoRename | null>(null)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(repoKey(id))
+      if (raw) { setRepoDone(JSON.parse(raw) as RepoRename); sessionStorage.removeItem(repoKey(id)) }
+    } catch { /* без хранилища — без строки */ }
+  }, [id])
 
   useEffect(() => {
     setCheck(null)
@@ -50,8 +61,11 @@ export function ElementAddress({ id, lang, ui, current, internet }: {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ address: value }),
       })
-      const d = (await r.json().catch(() => null)) as (Check & { address?: string }) | null
+      const d = (await r.json().catch(() => null)) as (Check & { address?: string; repo?: RepoRename }) | null
       if (d?.ok && d.address) {
+        if (d.repo && (d.repo.state === "renamed" || d.repo.state === "failed")) {
+          try { sessionStorage.setItem(repoKey(id), JSON.stringify(d.repo)) } catch { /* без хранилища */ }
+        }
         window.location.assign(`${BASE}/${lang}/architect/${d.address}/settings/danger-zone`)
         return
       }
@@ -87,6 +101,17 @@ export function ElementAddress({ id, lang, ui, current, internet }: {
       {/* 2026-10-01 (владелец, после 502 на roman-3): переезд папки останавливает элемент — около минуты адрес не отвечает. */}
       {(check?.ok === true || busy) && (
         <p className="rounded-md border border-warning/50 bg-warning/10 px-3 py-2 text-sm text-foreground" role="status" data-address-restart>{w.restart}</p>
+      )}
+      {check?.ok === true && <p className="text-sm text-muted-foreground" data-address-repo-note>{w.repoNote}</p>}
+      {repoDone?.state === "renamed" && (
+        <p className="rounded-md border border-success/50 bg-success/10 px-3 py-2 text-sm text-foreground" role="status" data-address-repo="renamed">
+          {w.repoRenamed.replace("{from}", repoDone.from ?? "").replace("{to}", repoDone.to ?? "")}
+        </p>
+      )}
+      {repoDone?.state === "failed" && (
+        <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-foreground" role="alert" data-address-repo="failed">
+          {w.repoFailed.replace("{from}", repoDone.from ?? "").replace("{reason}", repoDone.reason ?? "")}
+        </p>
       )}
       {check?.ok === false && check.reason && (
         <div className="flex flex-col gap-1.5" data-address-taken={check.reason}>

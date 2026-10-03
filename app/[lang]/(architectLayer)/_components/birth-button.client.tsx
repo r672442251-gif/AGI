@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { AppDialog } from "@/components/dialog/app-dialog.client"
 import type { AppDialogUi } from "@/components/dialog/app-dialog.i18n"
 import type { AgiDraftsUi } from "../_i18n/agi-drafts.i18n"
+import { announceGithubState } from "@/components/node-state/github-token-alarm.client"
 
 // «РОДИТЬ ЭЛЕМЕНТ» (узел, шаг 319-3; 367 — вопрос об облике). Кнопка → окно подтверждения (что произойдёт, сколько займёт и
 // каким родится элемент: «как весь проект» / «самостоятельный») → дверь
@@ -68,7 +69,7 @@ export function BirthButton({ id, ui, dialogUi, born = false }: { id: string; ui
       const next = (await r.json()) as State
       setS(next)
       if (next.state === "running") timer.current = window.setTimeout(poll, EVERY_MS)
-      else if (next.state === "done") router.refresh()
+      else if (next.state === "done") { router.refresh(); announceGithubState() }
     } catch {
       timer.current = window.setTimeout(poll, EVERY_MS)
     }

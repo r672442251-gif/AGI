@@ -15,7 +15,7 @@
 //   5. Установщик `--only <id>` собирает и пишет окружение; служба поднимается; id, порт, адрес и домен — прежние.
 // Ход — `data/services/<id>/import.json`.
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import paths from '../lib/agi-items/paths.cjs'
@@ -66,8 +66,14 @@ if (!existsSync(join(dir, '.git'))) fail('у элемента нет папки 
 save('archiving')
 let state = {}
 try { state = JSON.parse(readFileSync(join(ghDir, 'state.json'), 'utf8')) } catch { /* нет связи */ }
-const importToken = readToken(join(ghDir, '.env'))
-const oldToken = readToken(join(ghDir, '.env.previous')) || readToken(join(ROOT, 'data', 'node', 'github', '.env')) || importToken
+// 384-5: `--typed` — человек ввёл токен (он уже лежит своим токеном элемента, прежний — в `.env.previous`); без него токен — по
+// порядку «свой элемента → общий узла», а публичный репозиторий скачивается и без токена. `--detach` — токен не пишет в источник:
+// после замены элемент от него отвязан (план 384 «отвязать», подтверждён владельцем 2026-10-03).
+const typed = process.argv.includes('--typed')
+const detach = process.argv.includes('--detach')
+const nodeToken = readToken(join(ROOT, 'data', 'node', 'github', '.env'))
+const importToken = typed ? readToken(join(ghDir, '.env')) : readToken(join(ghDir, '.env')) || nodeToken
+const oldToken = (typed ? readToken(join(ghDir, '.env.previous')) : readToken(join(ghDir, '.env'))) || nodeToken || importToken
 if (!state.repo || state.repo === target) fail('у элемента нет прежнего репозитория — сначала создайте его («Создать репозитории»), иначе прежняя история пропадёт')
 if (!oldToken) fail('нет ключа, которым выгрузить прежнюю историю')
 const ident = ['-c', 'user.name=Fractera node', '-c', 'user.email=node@fractera.local']
@@ -80,10 +86,17 @@ if (arch.rc !== 0) fail(`прежняя история не выгружена �
 
 // 2. Новый проект.
 save('downloading')
-if (!importToken) fail('нет ключа элемента для нового репозитория')
 const tmp = `${dir}.import-${Date.now()}`
-const c = git(['clone', '--quiet', `https://x-access-token:${importToken}@github.com/${target}.git`, tmp], ROOT)
-if (c.rc !== 0) fail(`репозиторий ${target} не скачан (ключ не видит его или сети нет)`)
+const from = importToken ? `https://x-access-token:${importToken}@github.com/${target}.git` : `https://github.com/${target}.git`
+const c = git(['clone', '--quiet', from, tmp], ROOT)
+if (c.rc !== 0) fail(`репозиторий ${target} не скачан (токен не видит его или сети нет)`)
+// Введённый токен не пишет в источник — он был нужен только чтобы скачать: элементу возвращается прежний свой токен (или общий узла),
+// иначе «Создать и выгрузить» создало бы репозиторий в чужом аккаунте этого токена.
+if (detach && typed) {
+  const prev = join(ghDir, '.env.previous')
+  if (existsSync(prev)) renameSync(prev, join(ghDir, '.env'))
+  else rmSync(join(ghDir, '.env'), { force: true })
+}
 git(['remote', 'set-url', 'origin', `https://github.com/${target}.git`], tmp)
 
 // 3. Паспорт чужому проекту.
@@ -120,7 +133,10 @@ try {
 }
 renameSync(tmp, dir)
 mkdirSync(ghDir, { recursive: true })
-writeFileSync(join(ghDir, 'state.json'), JSON.stringify({ repo: target, importedAt: new Date().toISOString(), previous: state.repo }, null, 2) + '\n', 'utf8')
+// Отвязан — `repo` нет: полоса 382 назовёт элемент, «Создать и выгрузить» даст ему свой репозиторий; откуда код — `importedFrom`.
+writeFileSync(join(ghDir, 'state.json'), JSON.stringify(detach
+  ? { importedFrom: target, importedAt: new Date().toISOString(), previous: state.repo }
+  : { repo: target, importedAt: new Date().toISOString(), previous: state.repo }, null, 2) + '\n', 'utf8')
 // Реестр: элемент теперь живёт из нового репозитория — для установщика он самостоятельный (не переводится на тег Fractera).
 if (!entry.born) entry.born = { from: 'repository', url: `https://github.com/${target}.git`, version: 'repo', at: new Date().toISOString() }
 else entry.born = { ...entry.born, from: 'repository', url: `https://github.com/${target}.git`, version: 'repo' }
@@ -134,5 +150,5 @@ const ok = /===SERVICES_INSTALL_OK===/.test(`${inst.stdout ?? ''}`)
 for (const n of names) pm2(['start', 'ecosystem.config.cjs', '--only', n])
 pm2(['save'])
 if (!ok) fail('новый проект не собрался — прежняя версия лежит в AGI-ITEMS/.replaced и в прежнем репозитории; журнал — в выводе установщика')
-save('done', { previous: state.repo, replacedFolder: trash })
-console.log(`===IMPORT_OK=== ${id} ← ${target} (прежняя история — ${state.repo})`)
+save('done', { previous: state.repo, replacedFolder: trash, detached: detach })
+console.log(`===IMPORT_OK=== ${id} ← ${target} (прежняя история — ${state.repo})${detach ? ' — отвязан от источника' : ''}`)

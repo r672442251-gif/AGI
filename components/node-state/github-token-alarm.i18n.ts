@@ -5,16 +5,16 @@ export type GithubTokenAlarmWords = { lead: string; why: string; connect: string
 const DICT: Record<"en" | "ru", GithubTokenAlarmWords> = {
   en: {
     lead: "Your AGI ITEMS are kept only on this computer.",
-    why: "Every change is saved in each item's own history here, but nowhere else: if this computer breaks, the work is gone. Add a GitHub key and create a private repository for every AGI ITEM in your account — the whole history goes there; the project can then be restored on any computer, and any item can be handed over on its own.",
-    connect: "Add a GitHub key",
+    why: "Every change is saved in each item's own history here, but nowhere else: if this computer breaks, the work is gone. Add a GitHub token and create a private repository for every AGI ITEM in your account — the whole history goes there; the project can then be restored on any computer, and any item can be handed over on its own.",
+    connect: "Add a GitHub token",
     leadSome: "{n} AGI ITEM(S) are not saved to GitHub yet:",
     whySome: "Their work lives only on this computer. Give each a good name first if you want (the repository takes the item's name), then press «Create and upload» in its row.",
     open: "Open GitHub",
   },
   ru: {
     lead: "Ваши AGI ITEMS хранятся только на этом компьютере.",
-    why: "Каждая правка сохраняется в истории своего элемента здесь, но больше нигде: если компьютер сломается, работа пропадёт. Добавьте ключ GitHub и создайте в своём аккаунте приватный репозиторий каждому AGI ITEM — туда уедет вся история; тогда проект можно восстановить на любом компьютере, а любой элемент — передать отдельно.",
-    connect: "Добавить ключ GitHub",
+    why: "Каждая правка сохраняется в истории своего элемента здесь, но больше нигде: если компьютер сломается, работа пропадёт. Добавьте токен GitHub и создайте в своём аккаунте приватный репозиторий каждому AGI ITEM — туда уедет вся история; тогда проект можно восстановить на любом компьютере, а любой элемент — передать отдельно.",
+    connect: "Добавить токен GitHub",
     leadSome: "Не сохранены в GitHub ({n}):",
     whySome: "Их работа живёт только на этом компьютере. Если хотите, сначала дайте элементу хорошее имя (репозиторий получит имя элемента), затем нажмите «Создать и выгрузить» в его строке.",
     open: "Открыть GitHub",

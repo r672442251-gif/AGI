@@ -547,7 +547,7 @@ for (const entry of registry.services) {
   if (entry.github && !existsSync(join(dir, '.git'))) {
     const token = githubToken(entry.id)
     if (!token) {
-      say(`  ОШИБКА: элемент живёт в репозитории ${entry.github}, а ключа GitHub нет — добавьте ключ на странице GitHub узла и повторите`)
+      say(`  ОШИБКА: элемент живёт в репозитории ${entry.github}, а токена GitHub нет — добавьте токен на странице GitHub узла и повторите`)
       failed += 1
       continue
     }
