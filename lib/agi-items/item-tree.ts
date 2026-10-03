@@ -21,6 +21,8 @@ export const ITEM_TREE: TreePage[] = [
     slug: "build",
     words: w("Build", "Everything the element's agent needs to build it.", "Строительство", "Всё, что нужно агенту элемента, чтобы его строить."),
     pages: [
+      // 384-1, слово владельца 2026-10-03: «перевести её вверх самый вверх выше чем подписка Claude Code Agent».
+      { slug: "github", words: w("GitHub", "The element's own repository.", "GitHub", "Собственный репозиторий элемента.") },
       { slug: "subscription", words: w("Claude Code subscription", "Signing the element's agent in to the Claude Code subscription.", "Подписка Claude Code", "Вход агента элемента в подписку Claude Code.") },
       { slug: "terminal", words: w("Terminal", "A live Claude Code in the element's folder: started and stopped here.", "Терминал", "Живой Claude Code в папке элемента: запускается и останавливается здесь.") },
       // Владелец 2026-10-01: «кнопку развёртывания мы находим внизу а это очень важная кнопка … подними её вверх и установи сразу
@@ -34,7 +36,6 @@ export const ITEM_TREE: TreePage[] = [
       { slug: "plugins", words: w("Plugins", "Claude Code plugins to install so the element's agent works at its best.", "Плагины", "Плагины Claude Code, которые стоит поставить, чтобы агент элемента работал максимально эффективно.") },
       { slug: "browser-extensions", words: w("Browser extensions", "Browser extensions to install for the most effective work on the project.", "Браузерные расширения", "Расширения браузера, которые стоит поставить для максимально эффективной работы над проектом.") },
       { slug: "environment", words: w("Environment variables", "Keys and settings the element reads at start.", "Переменные окружения", "Ключи и настройки, которые элемент читает при старте.") },
-      { slug: "github", words: w("GitHub", "The element's own repository.", "GitHub", "Собственный репозиторий элемента.") },
     ],
   },
   {

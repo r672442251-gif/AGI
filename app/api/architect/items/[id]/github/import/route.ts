@@ -5,7 +5,7 @@ import { join } from "node:path"
 import { NextRequest, NextResponse } from "next/server"
 import { requireRoles } from "@/lib/auth/require-roles"
 import { isTemporaryPublicAddress } from "@/lib/auth/temporary-address"
-import { elementDir, parseRepo } from "@/lib/agi-items/element-github"
+import { elementDir, parseRepo, tokenFor } from "@/lib/agi-items/element-github"
 import { checkAccess } from "@/app/[lang]/(architectLayer)/architect/build/github/_github/server/github.cjs"
 import { SHAPE } from "@/app/[lang]/(architectLayer)/architect/build/github/_github/server/token.cjs"
 
@@ -38,24 +38,60 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!elementDir(id)) return NextResponse.json({ ok: false, error: "no-folder" }, { status: 404, ...noStore })
   const body = (await req.json().catch(() => null)) as { repo?: unknown; token?: unknown } | null
   const where = parseRepo(String(body?.repo ?? ""))
-  const token = String(body?.token ?? "").trim()
+  // 384-5 (владелец 2026-10-03: «Для публичного репозитории ключ не потребуется»; план «отвязать» подтверждён): поле токена
+  // необязательно — пусто: токен элемента по порядку `tokenFor` (свой → общий), а публичный репозиторий виден и без него.
+  const typed = String(body?.token ?? "").trim()
   if (!where) return NextResponse.json({ ok: false, error: "bad-repo" }, { status: 400, ...noStore })
-  if (!SHAPE.test(token)) return NextResponse.json({ ok: false, error: "bad-token-shape" }, { status: 400, ...noStore })
+  if (typed && !SHAPE.test(typed)) return NextResponse.json({ ok: false, error: "bad-token-shape" }, { status: 400, ...noStore })
   let previous: string | null = null
   try { previous = (JSON.parse(readFileSync(join(ghDir(id), "state.json"), "utf8")) as { repo?: string }).repo ?? null } catch { /* нет */ }
   if (!previous) return NextResponse.json({ ok: false, error: "archive-first" }, { status: 409, ...noStore })
-  if (previous === `${where.owner}/${where.repo}`) return NextResponse.json({ ok: false, error: "same-repo" }, { status: 409, ...noStore })
-  const access = await checkAccess(token, where.owner, where.repo)
-  if (!access.ok) return NextResponse.json({ ok: false, error: access.error ?? "github-refused" }, { status: 409, ...noStore })
-  if (!access.canRead) return NextResponse.json({ ok: false, error: "repo-not-visible" }, { status: 409, ...noStore })
+  const target = `${where.owner}/${where.repo}`
+  if (previous === target) return NextResponse.json({ ok: false, error: "same-repo" }, { status: 409, ...noStore })
+  const token = typed || tokenFor(id).token
+  let visible = false
+  if (token) {
+    const access = await checkAccess(token, where.owner, where.repo)
+    if (!access.ok) return NextResponse.json({ ok: false, error: access.error ?? "github-refused" }, { status: 409, ...noStore })
+    visible = access.canRead === true
+  }
+  if (!visible) visible = await publicRepo(where.owner, where.repo)
+  if (!visible) return NextResponse.json({ ok: false, error: "repo-not-visible" }, { status: 409, ...noStore })
+  // 🔒 СОХРАНЯТЬ МОЖНО ТОЛЬКО ТУДА, КУДА ТОКЕН ПИШЕТ: право — настоящей пробной отправкой (`permissions.push` — права аккаунта, 319-5).
+  // Нет права — после замены элемент отвязывается от источника, свой репозиторий — «Создать и выгрузить».
+  const writable = token ? canPush(elementDir(id)!, token, target) : false
   mkdirSync(ghDir(id), { recursive: true })
-  const own = join(ghDir(id), ".env")
-  if (existsSync(own)) copyFileSync(own, join(ghDir(id), ".env.previous"))
-  writeFileSync(own, `GITHUB_TOKEN=${token}\n`, { mode: 0o600 })
-  try { chmodSync(own, 0o600) } catch { /* Windows: права даёт профиль пользователя */ }
-  writeFileSync(join(ROOT, "data", "services", id, "import.json"), JSON.stringify({ state: "starting", target: `${where.owner}/${where.repo}`, at: new Date().toISOString() }, null, 2) + "\n", "utf8")
-  spawnSync(process.execPath, [join(ROOT, "scripts", "spawn-free.mjs"), join(ROOT, "scripts", "element-import.mjs"), id, `${where.owner}/${where.repo}`], {
+  if (typed) {
+    const own = join(ghDir(id), ".env")
+    if (existsSync(own)) copyFileSync(own, join(ghDir(id), ".env.previous"))
+    writeFileSync(own, `GITHUB_TOKEN=${typed}\n`, { mode: 0o600 })
+    try { chmodSync(own, 0o600) } catch { /* Windows: права даёт профиль пользователя */ }
+  }
+  writeFileSync(join(ROOT, "data", "services", id, "import.json"), JSON.stringify({ state: "starting", target, at: new Date().toISOString() }, null, 2) + "\n", "utf8")
+  const flags = [...(typed ? ["--typed"] : []), ...(writable ? [] : ["--detach"])]
+  spawnSync(process.execPath, [join(ROOT, "scripts", "spawn-free.mjs"), join(ROOT, "scripts", "element-import.mjs"), id, target, ...flags], {
     cwd: ROOT, windowsHide: true, stdio: "ignore", timeout: 10_000,
   })
-  return NextResponse.json({ ok: true, state: "starting", previous }, noStore)
+  return NextResponse.json({ ok: true, state: "starting", previous, writable }, noStore)
+}
+
+/** Публичный репозиторий виден без токена: GitHub отвечает 200 и `private: false` (для закрытого — 404). */
+async function publicRepo(owner: string, repo: string): Promise<boolean> {
+  try {
+    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: { Accept: "application/vnd.github+json", "User-Agent": "fractera-agi-node", "X-GitHub-Api-Version": "2022-11-28" },
+      signal: AbortSignal.timeout(15_000),
+    })
+    if (!r.ok) return false
+    const d = (await r.json().catch(() => null)) as { private?: boolean } | null
+    return d?.private === false
+  } catch { return false }
+}
+
+/** Пробная отправка `git push --dry-run` — проходит проверку прав GitHub и ничего не пишет. */
+function canPush(dir: string, token: string, target: string): boolean {
+  const r = spawnSync("git", ["-C", dir, "-c", "credential.helper=", "push", "--dry-run", `https://x-access-token:${token}@github.com/${target}.git`, "HEAD:refs/heads/fractera-import-probe"], {
+    encoding: "utf8", windowsHide: true, timeout: 60_000, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+  })
+  return r.status === 0
 }

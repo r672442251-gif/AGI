@@ -36,6 +36,8 @@ export type ElementGithubState = {
   commit: string | null
   /** 374-3: каким ключом пойдёт выгрузка — своим элемента, общим узла или никаким. */
   tokenSource: TokenSource
+  /** 384-2: 4 последних знака токена, которым пойдёт выгрузка (своего или общего) — для зелёной плашки. */
+  activeTail: string | null
 }
 
 type Stored = { repo?: string; login?: string | null; expires?: string | null; lastPushedAt?: string; lastCommit?: string }
@@ -119,6 +121,7 @@ export function elementGithubState(id: string): ElementGithubState {
   const dir = elementDir(id)
   const dirty = dir ? changes(dir).length : 0
   const commit = dir ? git(dir, ["rev-parse", "--short", "HEAD"]).out.trim() || null : null
+  const active = tokenFor(id)
   return {
     repo: st.repo ?? null,
     login: st.login ?? null,
@@ -128,7 +131,8 @@ export function elementGithubState(id: string): ElementGithubState {
     lastCommit: st.lastCommit ?? null,
     dirty,
     commit,
-    tokenSource: tokenFor(id).source,
+    tokenSource: active.source,
+    activeTail: active.token ? active.token.slice(-4) : null,
   }
 }
 
@@ -136,8 +140,12 @@ export function elementGithubState(id: string): ElementGithubState {
 export async function connectElementGithub(id: string, rawRepo: string, rawToken: string) {
   const where = parseRepo(rawRepo)
   if (!where) return { ok: false as const, error: "bad-repo" }
-  const token = rawToken.trim()
-  if (!SHAPE.test(token)) return { ok: false as const, error: "bad-token-shape" }
+  // 384-2 (владелец 2026-10-03: «можно использовать другой репозиторий в рамках этого же аккаунта и тогда ключ будет подставлена
+  // автоматически»): пустое поле — токен по порядку `tokenFor` (свой элемента → общий узла); сохраняется только введённый.
+  const typed = rawToken.trim()
+  if (typed && !SHAPE.test(typed)) return { ok: false as const, error: "bad-token-shape" }
+  const token = typed || tokenFor(id).token
+  if (!token) return { ok: false as const, error: "no-token" }
   const access = await checkAccess(token, where.owner, where.repo)
   if (!access.ok) return { ok: false as const, error: access.error ?? "github-refused" }
   if (!access.canRead) return { ok: false as const, error: "repo-not-visible", login: access.login ?? null }
@@ -156,8 +164,10 @@ export async function connectElementGithub(id: string, rawRepo: string, rawToken
     }
   }
   mkdirSync(dataDir(id), { recursive: true })
-  writeFileSync(tokenFile(id), `${KEY}${token}\n`, { mode: 0o600 })
-  try { chmodSync(tokenFile(id), 0o600) } catch { /* Windows: права файла задаёт профиль пользователя */ }
+  if (typed) {
+    writeFileSync(tokenFile(id), `${KEY}${token}\n`, { mode: 0o600 })
+    try { chmodSync(tokenFile(id), 0o600) } catch { /* Windows: права файла задаёт профиль пользователя */ }
+  }
   writeStored(id, { ...readStored(id), repo: `${where.owner}/${where.repo}`, login: access.login ?? null, expires: access.expires ?? null })
   return { ok: true as const }
 }
@@ -236,17 +246,58 @@ async function gh(token: string, method: string, url: string, body?: unknown) {
   } catch { return { status: 0, body: null, retryAt: Date.now() + 60_000 } }
 }
 
-/** Имя репозитория элемента: `<имя форка узла>-<адрес>` (решение плана 374, названо владельцу). */
-function repoName(id: string): string {
+/** Имя репозитория для адреса: `<имя форка узла>-<адрес>` (решение плана 374, названо владельцу). */
+function repoNameFor(address: string): string {
   let project = "agi"
   try {
     const o = JSON.parse(readFileSync(join(ROOT, "logs", "origin.json"), "utf8")) as { slug?: string }
     const name = o.slug?.split("/")[1]
     if (name) project = name.toLowerCase()
   } catch { /* узел без отметки форка — «agi» */ }
+  return `${project}-${address}`.replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 100)
+}
+
+/** Имя репозитория элемента по его нынешнему адресу. */
+function repoName(id: string): string {
   let address = id
   try { address = (JSON.parse(readFileSync(join(ROOT, "data", "services", id, "address.json"), "utf8")) as { address?: string }).address || id } catch { /* адрес = id */ }
-  return `${project}-${address}`.replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 100)
+  return repoNameFor(address)
+}
+
+// ── ПЕРЕИМЕНОВАНИЕ РЕПОЗИТОРИЯ ВМЕСТЕ С ЭЛЕМЕНТОМ (384-4) ─────────────────────────────────────────────────────────────────────
+// Слово владельца 2026-10-03: «если я меняю названия при существующем ключе я должен сохранить репозиторий с новым названием».
+// 🔒 ТОЛЬКО ИМЯ, ДАННОЕ УЗЛОМ: репозиторий `<форк>-<прежний адрес>` переименовывается; подключённый человеком под своим именем
+// (купленный сайт, «Другой репозиторий») — остаётся как есть (план 384, подтверждён).
+// 🔒 ПЕРВОИСТОЧНИК (docs.github.com, «Renaming a repository»): «all git clone, git fetch, or git push operations targeting the previous
+// location will continue to function as if made on the new location»; «do not reuse the original name of the renamed repository. If you
+// do, redirects to the renamed repository will no longer work». Запрос — `PATCH /repos/{owner}/{repo}` с `name`, классическому
+// токену нужна галочка `repo`.
+// Переименование элемента от отказа GitHub НЕ откатывается: элемент уже переименован, репозиторий остаётся прежним, причина — в ответе.
+export type RepoRename = { state: "none" | "kept" | "renamed" | "failed"; from?: string; to?: string; reason?: string }
+export async function renameElementRepo(id: string, previousAddress: string, address: string): Promise<RepoRename> {
+  const st = readStored(id)
+  if (!st.repo) return { state: "none" }
+  const [owner, name] = st.repo.split("/")
+  const target = repoNameFor(address)
+  if (!owner || !name || name.toLowerCase() !== repoNameFor(previousAddress).toLowerCase()) return { state: "kept", from: st.repo, reason: "custom-name" }
+  if (name.toLowerCase() === target.toLowerCase()) return { state: "kept", from: st.repo, reason: "same-name" }
+  const { token } = tokenFor(id)
+  if (!token) return { state: "failed", from: st.repo, reason: "no-token" }
+  const r = await gh(token, "PATCH", `/repos/${owner}/${name}`, { name: target })
+  if (r.status !== 200) {
+    const said = typeof r.body?.message === "string" ? r.body.message.slice(0, 200) : `HTTP ${r.status}`
+    const reason = r.status === 0 ? "github-unreachable" : r.status === 422 ? "name-taken" : r.status === 403 || r.status === 404 || r.status === 401 ? "no-rename-right" : "rename-failed"
+    return { state: "failed", from: st.repo, to: `${owner}/${target}`, reason: `${reason}: ${said}` }
+  }
+  const full = typeof r.body?.full_name === "string" ? r.body.full_name : `${owner}/${target}`
+  writeStored(id, { ...readStored(id), repo: full })
+  // `origin` папки элемента есть только после восстановления (установщик, 374-5) — переводится на новое имя, если указывал на старое.
+  const dir = elementDir(id)
+  if (dir) {
+    const o = git(dir, ["remote", "get-url", "origin"])
+    if (o.rc === 0 && o.out.trim().toLowerCase().includes(`${owner}/${name}`.toLowerCase())) git(dir, ["remote", "set-url", "origin", `https://github.com/${full}.git`])
+  }
+  return { state: "renamed", from: st.repo, to: full }
 }
 
 export type RepoResult = { id: string; ok: boolean; repo?: string; error?: string; created?: boolean; detail?: string; retryAt?: string }
