@@ -26,6 +26,9 @@ export type ElementGithubUi = {
   tokenLabel: string
   tokenPlaceholder: string
   tokenHelp: string
+  activeNode: string
+  activeElement: string
+  activeNone: string
   connect: string
   connecting: string
   connected: string
@@ -72,7 +75,7 @@ const DICT: Record<string, ElementGithubUi> = {
     plateNoToken: "The node has no GitHub token — nothing of this item is saved to GitHub.",
     plateNoTokenLink: "Add the node's token",
     otherTitle: "Another repository or this item's own token — optional",
-    otherHelp: "Not needed while the plate above is green. Here you point this item to another repository (in the same GitHub account the node's token is used by itself — leave the token empty) or give it its own token: it is stronger than the common one, for example to give this item access to one repository only.",
+    otherHelp: "Not needed while the plate above is green. Here you point this item to another repository (in the same GitHub account the token that works now is used by itself — nothing to type) or give it its own token: it is stronger than the common one, for example to give this item access to one repository only.",
     step1: "Another repository: create an empty one on GitHub — without a README, or GitHub will reject the export.",
     step1Link: "Create a repository",
     step2: "Own token (only if the repository is in another GitHub account or you want to narrow access): sign in as the account that owns the repository and create a classic token:",
@@ -87,9 +90,12 @@ const DICT: Record<string, ElementGithubUi> = {
     step4: "Sending answers 403? The token has no «repo» box or belongs to another GitHub account — create a new one by point 2, paste it and press «Check and save»: it replaces the old one.",
     repoLabel: "Repository",
     repoPlaceholder: "owner/name or https://github.com/owner/name",
-    tokenLabel: "GitHub token (optional)",
-    tokenPlaceholder: "empty — the node's common token",
-    tokenHelp: "Empty — the node's common token is used. A token typed here becomes this item's own and is stronger than the common one: a classic token with «repo» and «workflow», created under the account that owns the repository. The node keeps it in its own data (owner-only), shows only the last 4 characters and never writes it into git settings.",
+    tokenLabel: "Replace with this item's own token (optional)",
+    tokenPlaceholder: "ghp_… — only to replace the token above",
+    tokenHelp: "The token named above already works — nothing has to be typed. Type a token here only to give this item its OWN token instead of the node's common one: for a repository in another GitHub account or to narrow access to one repository. A classic token with «repo» and «workflow»; the node keeps it in its own data (owner-only), shows only the last 4 characters and never writes it into git settings.",
+    activeNode: "Works now: the node's common GitHub token …{tail}",
+    activeElement: "Works now: this item's own GitHub token …{tail}",
+    activeNone: "Works now: no GitHub token — neither the node nor this item has one",
     connect: "Check and save",
     connecting: "Asking GitHub…",
     connected: "Connected",
@@ -114,7 +120,7 @@ const DICT: Record<string, ElementGithubUi> = {
     importIntro: "Bought or found a ready project? It takes this item's place: the same address, domain and port, the new code. The current history first goes to this item's repository and stays there as an archive.",
     importRepo: "Repository to take (owner/name)",
     importToken: "GitHub token (optional)",
-    importTokenHelp: "A repository in the same GitHub account — leave it empty, the node's token is used by itself. A public repository — no token is needed to take it, but this item cannot save into someone else's repository: after the replacement it is unlinked from it, and «Create and upload» saves it to your own private repository. A private repository of another account — only with a token that sees it. A public repository is not free to use by itself: its license decides.",
+    importTokenHelp: "The token named above is used by itself — for a repository in the same GitHub account nothing has to be typed. A public repository — no token is needed to take it, but this item cannot save into someone else's repository: after the replacement it is unlinked from it, and «Create and upload» saves it to your own private repository. A private repository of another account — only with a token that sees it. A public repository is not free to use by itself: its license decides.",
     importButton: "Replace the code",
     importConfirm: "The code of this item is replaced with {repo}. Its current history goes to {previous} and stays there. The item stops for the time of the build (a few minutes). Continue?",
     importYes: "Yes, replace",
@@ -162,7 +168,7 @@ const DICT: Record<string, ElementGithubUi> = {
     plateNoToken: "У узла нет токена GitHub — ничего из этого элемента в GitHub не сохраняется.",
     plateNoTokenLink: "Добавить токен узла",
     otherTitle: "Другой репозиторий или свой токен элемента — необязательно",
-    otherHelp: "Не нужно, пока плашка выше зелёная. Здесь элементу указывают другой репозиторий (в том же аккаунте GitHub токен узла подставится сам — поле токена оставьте пустым) или дают ему свой токен: он сильнее общего, например чтобы дать этому элементу доступ только к одному репозиторию.",
+    otherHelp: "Не нужно, пока плашка выше зелёная. Здесь элементу указывают другой репозиторий (в том же аккаунте GitHub токен, который работает сейчас, подставится сам — вводить ничего не нужно) или дают ему свой токен: он сильнее общего, например чтобы дать этому элементу доступ только к одному репозиторию.",
     step1: "Другой репозиторий: создайте на GitHub пустой — без README, иначе GitHub отклонит выгрузку.",
     step1Link: "Создать репозиторий",
     step2: "Свой токен (только если репозиторий в другом аккаунте GitHub или нужно сузить доступ): войдите под аккаунтом-владельцем репозитория и создайте классический токен:",
@@ -177,9 +183,12 @@ const DICT: Record<string, ElementGithubUi> = {
     step4: "Отправка отвечает 403? У токена нет галочки «repo» или он создан под другим аккаунтом GitHub — создайте новый по пункту 2, вставьте и нажмите «Проверить и сохранить»: он заменит старый.",
     repoLabel: "Репозиторий",
     repoPlaceholder: "владелец/имя или https://github.com/владелец/имя",
-    tokenLabel: "Токен GitHub (необязательно)",
-    tokenPlaceholder: "пусто — общий токен узла",
-    tokenHelp: "Пусто — используется общий токен узла. Введённый здесь токен становится собственным токеном элемента и сильнее общего: классический токен с галочками «repo» и «workflow», созданный под аккаунтом-владельцем репозитория. Узел хранит его в своих данных (доступ только владельцу), показывает лишь 4 последних знака и никогда не пишет в настройки git.",
+    tokenLabel: "Заменить своим токеном элемента (необязательно)",
+    tokenPlaceholder: "ghp_… — только чтобы заменить токен выше",
+    tokenHelp: "Токен, названный выше, уже работает — вводить ничего не нужно. Сюда вводят токен, только чтобы дать этому элементу СВОЙ токен вместо общего токена узла: для репозитория в другом аккаунте GitHub или чтобы сузить доступ до одного репозитория. Классический токен с галочками «repo» и «workflow»; узел хранит его в своих данных (доступ только владельцу), показывает лишь 4 последних знака и никогда не пишет в настройки git.",
+    activeNode: "Сейчас работает: общий токен GitHub узла …{tail}",
+    activeElement: "Сейчас работает: собственный токен GitHub элемента …{tail}",
+    activeNone: "Сейчас работает: токена GitHub нет — ни у узла, ни у элемента",
     connect: "Проверить и сохранить",
     connecting: "Спрашиваю GitHub…",
     connected: "Подключено",
@@ -204,7 +213,7 @@ const DICT: Record<string, ElementGithubUi> = {
     importIntro: "Купили или нашли готовый проект? Он встанет на место этого элемента: тот же адрес, домен и порт, новый код. Нынешняя история сначала уедет в репозиторий элемента и останется там архивом.",
     importRepo: "Какой репозиторий взять (владелец/имя)",
     importToken: "Токен GitHub (необязательно)",
-    importTokenHelp: "Репозиторий в том же аккаунте GitHub — оставьте пустым, токен узла подставится сам. Публичный репозиторий — чтобы забрать, токен не нужен, но сохранять в чужой репозиторий элемент не сможет: после замены он отвязывается от него, и «Создать и выгрузить» сохранит его в ваш собственный приватный репозиторий. Приватный репозиторий другого аккаунта — только с токеном, который его видит. Публичный — не значит свободный: можно ли им пользоваться, решает его лицензия.",
+    importTokenHelp: "Токен, названный выше, используется сам — для репозитория в том же аккаунте GitHub вводить ничего не нужно. Публичный репозиторий — чтобы забрать, токен не нужен, но сохранять в чужой репозиторий элемент не сможет: после замены он отвязывается от него, и «Создать и выгрузить» сохранит его в ваш собственный приватный репозиторий. Приватный репозиторий другого аккаунта — только с токеном, который его видит. Публичный — не значит свободный: можно ли им пользоваться, решает его лицензия.",
     importButton: "Заменить код",
     importConfirm: "Код элемента заменится на {repo}. Нынешняя история уедет в {previous} и останется там. На время сборки (несколько минут) элемент остановится. Продолжить?",
     importYes: "Да, заменить",

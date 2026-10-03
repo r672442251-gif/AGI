@@ -161,6 +161,14 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
     <div className="flex flex-wrap gap-x-2 text-sm"><span className="text-muted-foreground">{label}:</span><span className="font-mono">{value}</span></div>
   )
 
+  // Какой токен работает сейчас — строкой над каждым полем токена (поправка владельца: поле не говорит «пусто»).
+  const activeLine = !s ? null : s.tokenSource === "element" ? ui.activeElement.replace("{tail}", s.activeTail ?? "") : s.tokenSource === "node" ? ui.activeNode.replace("{tail}", s.activeTail ?? "") : ui.activeNone
+  const active = activeLine && (
+    <p className={`flex items-center gap-1.5 text-sm font-medium ${s?.tokenSource ? "text-foreground" : "text-destructive"}`} data-element-github-active={s?.tokenSource ?? "none"}>
+      {s?.tokenSource ? <CircleCheck className="size-4 shrink-0 text-success" aria-hidden /> : <TriangleAlert className="size-4 shrink-0" aria-hidden />}
+      {activeLine}
+    </p>
+  )
   const importKey = imp?.state === "done" && imp.detached ? "detached" : imp?.state ?? "none"
   return (
     <TooltipProvider>
@@ -245,6 +253,7 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
               <Label htmlFor={`gh-repo-${id}`}>{ui.repoLabel}</Label>
               <Input id={`gh-repo-${id}`} value={repo} onChange={(e) => setRepo(e.target.value)} placeholder={ui.repoPlaceholder} autoComplete="off" spellCheck={false} className="font-mono" />
             </div>
+            {active}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1">
                 <Label htmlFor={`gh-token-${id}`}>{ui.tokenLabel}</Label>
@@ -274,6 +283,7 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
             <Label htmlFor={`gh-import-repo-${id}`}>{ui.importRepo}</Label>
             <Input id={`gh-import-repo-${id}`} value={importRepo} onChange={(e) => setImportRepo(e.target.value)} placeholder="owner/name" autoComplete="off" spellCheck={false} className="font-mono" />
           </div>
+          {active}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1">
               <Label htmlFor={`gh-import-token-${id}`}>{ui.importToken}</Label>
