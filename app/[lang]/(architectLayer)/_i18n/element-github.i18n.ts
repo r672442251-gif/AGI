@@ -29,6 +29,17 @@ export type ElementGithubUi = {
   activeNode: string
   activeElement: string
   activeNone: string
+  connectOk: string
+  tokenNodeShort: string
+  tokenOwnShort: string
+  renameTitle: string
+  renameHelp: string
+  renameCurrent: string
+  renameLabel: string
+  renameButton: string
+  renaming: string
+  renamed: string
+  renameSame: string
   connect: string
   connecting: string
   connected: string
@@ -96,6 +107,17 @@ const DICT: Record<string, ElementGithubUi> = {
     activeNode: "Works now: the node's common GitHub token …{tail}",
     activeElement: "Works now: this item's own GitHub token …{tail}",
     activeNone: "Works now: no GitHub token — neither the node nor this item has one",
+    connectOk: "The token is confirmed as active: {source} can write to {repo}. From now on this item's work goes to {repo} — by the «Send to GitHub» button, by its agent when you ask it, and tasks from Telegram are sent at once.",
+    tokenNodeShort: "the node's common token …{tail}",
+    tokenOwnShort: "this item's own token …{tail}",
+    renameTitle: "Rename the repository",
+    renameHelp: "Renames the repository on GitHub; the node writes the new name everywhere it keeps it. GitHub redirects the old links itself, and pushes and clones to the old address keep working. Do not create a new repository with the old name later — that breaks the redirect.",
+    renameCurrent: "Now",
+    renameLabel: "New name",
+    renameButton: "Rename the repository",
+    renaming: "Renaming…",
+    renamed: "The repository is renamed: {from} → {to}. GitHub redirects the old links itself.",
+    renameSame: "The repository already has this name.",
     connect: "Check and save",
     connecting: "Asking GitHub…",
     connected: "Connected",
@@ -154,6 +176,10 @@ const DICT: Record<string, ElementGithubUi> = {
       "needs-workflow": "GitHub refused the files in .github/workflows: the token has no «workflow» box. Create a token with «repo» and «workflow» (point 2), paste it and send again.",
       "commit-failed": "The node could not commit the changes.",
       "push-failed": "The export did not go through.",
+      "bad-name": "A repository name may hold letters, digits, «.», «_» and «-», up to 100 characters.",
+      "name-taken": "GitHub refused: this account already has a repository with that name.",
+      "no-rename-right": "GitHub does not let the token rename this repository: it needs the «repo» box and admin rights on the repository.",
+      "rename-failed": "GitHub did not rename the repository.",
       "temporary-address": "Tokens are not handled on a temporary public address — open the node on its own domain or on this computer.",
     },
   },
@@ -189,6 +215,17 @@ const DICT: Record<string, ElementGithubUi> = {
     activeNode: "Сейчас работает: общий токен GitHub узла …{tail}",
     activeElement: "Сейчас работает: собственный токен GitHub элемента …{tail}",
     activeNone: "Сейчас работает: токена GitHub нет — ни у узла, ни у элемента",
+    connectOk: "Токен подтверждён как активный: {source} может писать в {repo}. Теперь работа этого элемента уходит в {repo} — кнопкой «Отправить в GitHub», агентом элемента по вашей просьбе, а задачи из Telegram отправляются сразу.",
+    tokenNodeShort: "общий токен узла …{tail}",
+    tokenOwnShort: "собственный токен элемента …{tail}",
+    renameTitle: "Переименовать репозиторий",
+    renameHelp: "Переименовывает репозиторий на GitHub; узел записывает новое имя везде, где его хранит. Старые ссылки GitHub перенаправляет сам, отправка и скачивание по старому адресу продолжают работать. Не создавайте потом новый репозиторий со старым именем — перенаправление сломается.",
+    renameCurrent: "Сейчас",
+    renameLabel: "Новое имя",
+    renameButton: "Переименовать репозиторий",
+    renaming: "Переименовываю…",
+    renamed: "Репозиторий переименован: {from} → {to}. Старые ссылки GitHub перенаправляет сам.",
+    renameSame: "У репозитория уже это имя.",
     connect: "Проверить и сохранить",
     connecting: "Спрашиваю GitHub…",
     connected: "Подключено",
@@ -247,6 +284,10 @@ const DICT: Record<string, ElementGithubUi> = {
       "needs-workflow": "GitHub не принял файлы .github/workflows: у токена нет галочки «workflow». Создайте токен с галочками «repo» и «workflow» (пункт 2), вставьте и отправьте снова.",
       "commit-failed": "Узел не смог закоммитить правки.",
       "push-failed": "Выгрузка не прошла.",
+      "bad-name": "В имени репозитория — буквы, цифры, «.», «_» и «-», до 100 знаков.",
+      "name-taken": "GitHub отказал: в этом аккаунте уже есть репозиторий с таким именем.",
+      "no-rename-right": "GitHub не даёт токену переименовать этот репозиторий: нужны галочка «repo» и права администратора репозитория.",
+      "rename-failed": "GitHub не переименовал репозиторий.",
       "temporary-address": "На временном публичном адресе токены не принимаются — откройте узел на его домене или на этом компьютере.",
     },
   },
