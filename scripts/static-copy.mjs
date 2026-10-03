@@ -42,15 +42,20 @@ if (process.argv.includes('--remove')) {
   const last = readJson(STATE)
   if (!last?.host || !last?.script || !token0) { say('снимать нечего'); console.log('===COPY_REMOVED==='); process.exit(0) }
   const h = { Authorization: `Bearer ${token0}` }
-  const zr = await (await fetch(`${API}/zones?name=${encodeURIComponent(last.host.split('.').slice(-2).join('.'))}`, { headers: h })).json().catch(() => ({}))
-  const zz = zr.result?.[0]
-  if (zz) {
+  let account = null
+  for (const hh of last.hosts ?? [last.host]) {
+    const zr = await (await fetch(`${API}/zones?name=${encodeURIComponent(hh.split('.').slice(-2).join('.'))}`, { headers: h })).json().catch(() => ({}))
+    const zz = zr.result?.[0]
+    if (!zz) continue
+    account = zz.account.id
     const rr = await (await fetch(`${API}/zones/${zz.id}/workers/routes`, { headers: h })).json().catch(() => ({}))
     for (const r of rr.result ?? []) if (r.script === last.script) await fetch(`${API}/zones/${zz.id}/workers/routes/${r.id}`, { method: 'DELETE', headers: h })
-    const del = await fetch(`${API}/accounts/${zz.account.id}/workers/scripts/${last.script}?force=true`, { method: 'DELETE', headers: h })
-    say(`копия снята: маршруты ${last.host}, Worker ${last.script} (${del.status})`)
   }
-  save({ ok: false, removed: true, host: last.host })
+  if (account) {
+    const del = await fetch(`${API}/accounts/${account}/workers/scripts/${last.script}?force=true`, { method: 'DELETE', headers: h })
+    say(`копия снята: маршруты ${(last.hosts ?? [last.host]).join(', ')}, Worker ${last.script} (${del.status})`)
+  }
+  save({ ok: false, removed: true, host: last.host, hosts: last.hosts ?? [last.host] })
   console.log('===COPY_REMOVED===')
   process.exit(0)
 }
@@ -60,9 +65,6 @@ if (!entry) { console.error('usage: static-copy.mjs <id> [--dry | --remove]'); p
 const dir = paths.entryDir(entry)
 const stamp = readJson(join(dir, '.install-stamp.json'))
 if (!stamp?.port || !stamp?.dist) fail('not-installed')
-const domain = readJson(join(ROOT, 'data', 'services', id, 'domain.json'))
-if (!domain?.url) fail('no-own-domain', 'копия нужна элементу со своим доменом')
-const host = new URL(domain.url).host
 const envText = (() => { try { return readFileSync(join(ROOT, '.env.local'), 'utf8') } catch { return '' } })()
 const token = envText.match(/^CLOUDFLARE_API_TOKEN=(.*)$/m)?.[1]?.trim()
 if (!token) fail('no-key')
@@ -72,6 +74,25 @@ async function cf(method, path, body, headers = {}) {
   const j = await r.json().catch(() => ({}))
   return { status: r.status, ok: r.ok && j.success !== false, result: j.result, errors: (j.errors ?? []).map((e) => `${e.code} ${e.message}`).join('; ') }
 }
+
+// ── 0. Адреса элемента (шаг 385). Свой домен элемента (`domain.json`) — главный и единственный: его поддомен отвечает 301, и
+// копия там подменила бы перенаправление страницей. Иначе — КАК ЕСТЬ: хосты туннеля узла, ведущие на порт элемента (главный домен
+// узла → root, `<адрес>.<зона>` → элемент). Владелец 2026-10-03: «каждый из них имеет свой рут статик».
+const domain = readJson(join(ROOT, 'data', 'services', id, 'domain.json'))
+let hosts = domain?.url ? [new URL(domain.url).host] : []
+if (!hosts.length) {
+  const node = readJson(join(ROOT, 'logs', 'domain.json'))
+  if (!node?.zone || !node?.tunnelId) fail('no-address', 'у узла нет своего домена — копия нужна только адресам в зоне человека')
+  const nz = await cf('GET', `/zones?name=${encodeURIComponent(node.zone)}`)
+  const nzr = nz.result?.[0]
+  if (!nz.ok || !nzr) fail('zone-not-visible', nz.errors)
+  const ing = await cf('GET', `/accounts/${nzr.account.id}/cfd_tunnel/${node.tunnelId}/configurations`)
+  if (!ing.ok) fail('tunnel-not-visible', `${ing.status} ${ing.errors}`)
+  const portOf = (s) => { try { return Number(new URL(s).port) } catch { return 0 } }
+  hosts = (ing.result?.config?.ingress ?? []).filter((r) => r.hostname && portOf(r.service) === Number(stamp.port)).map((r) => r.hostname)
+  if (!hosts.length) fail('no-address', `в туннеле нет адреса, ведущего на порт ${stamp.port}`)
+}
+const host = hosts[0]
 
 // ── 1. Страницы: корень, главная и каждая страница публичной ветки на каждом языке сайта ─────────────────────────────────────
 const envLocal = (() => { try { return readFileSync(join(dir, '.env.local'), 'utf8') } catch { return '' } })()
@@ -87,21 +108,43 @@ const slugs = []
     walk(p, prefix + e.name + '/')
   }
 })(pagesDir, '')
-const pagePaths = ['/', ...langs.flatMap((l) => [`/${l}`, ...slugs.map((s) => `/${l}/${s}`)])]
 const origin = `http://127.0.0.1:${stamp.port}`
 // 2026-10-01: копия запускается сразу после «Принять»/«Развернуть», а элемент в этот момент ещё перезапускается. ✗ Замерено: 14:45:27
 // копия упала «no-pages» через 7 с после старта элемента, и aifa.dev сутки отдавал прежнюю копию. Ждём ответа ПО ФАКТУ, до 90 с.
+// По `/`, а не `/api/health`: у auth и data этой двери нет (385, замер), а `/` есть у всех (200 или перенаправление).
 for (const until = Date.now() + 90_000; Date.now() < until;) {
-  const h = await fetch(origin + '/api/health', { signal: AbortSignal.timeout(5_000) }).catch(() => null)
-  if (h?.ok) break
+  const h = await fetch(origin + '/', { redirect: 'manual', signal: AbortSignal.timeout(5_000) }).catch(() => null)
+  if (h && h.status < 500) break
   await new Promise((r) => setTimeout(r, 2_000))
 }
+// Страницы из карты сайта самого элемента (385): у root их 18, у auth/data карты нет — тогда остаются `/` и `/<язык>`. Хост в
+// `<loc>` отбрасывается: карта бывает собрана со старым адресом (замер: roman пишет throughsongs.com).
+const fromSitemap = await (async () => {
+  const r = await fetch(origin + '/sitemap.xml', { signal: AbortSignal.timeout(30_000) }).catch(() => null)
+  if (!r?.ok) return []
+  return [...(await r.text()).matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => { try { return new URL(m[1]).pathname.replace(/\/+$/, '') || '/' } catch { return null } }).filter(Boolean)
+})()
+// Манифест сборки — точный список того, что Next собрал статикой (у auth: `/en`, `/ru`, `/login`…). Берутся только страницы с языком
+// первым сегментом: это публичный слой. `/login`, `/register` — формы, без дома они не работают; честнее «хозяин не в сети».
+const fromManifest = Object.keys(readJson(join(dir, stamp.dist, 'prerender-manifest.json'))?.routes ?? {}).filter((p) => /^\/[a-z]{2}(-[A-Za-z]{2,4})?(\/|$)/.test(p))
+const pagePaths = [...new Set(['/', ...langs.flatMap((l) => [`/${l}`, ...slugs.map((s) => `/${l}/${s}`)]), ...fromSitemap, ...fromManifest])]
 
 const files = new Map() // путь в копии → Buffer
-for (const p of pagePaths) {
+const redirects = {} // путь → куда; Worker отдаёт их, только когда дом молчит (дом сам решает язык по заголовкам)
+// Языковые двойники страницы — из её же `<link rel="alternate" hreflang>`: у auth в окружении нет списка языков, а `/ru` есть (385).
+const alternates = (html) => [...html.matchAll(/<link[^>]*hreflang="[^"]+"[^>]*>/g)].map((m) => m[0].match(/href="([^"]+)"/)?.[1])
+  .map((u) => { try { return new URL(u, 'http://x').pathname.replace(/\/+$/, '') || '/' } catch { return null } }).filter(Boolean)
+for (let i = 0; i < pagePaths.length && pagePaths.length < 2000; i++) {
+  const p = pagePaths[i]
   const r = await fetch(origin + p, { redirect: 'manual', signal: AbortSignal.timeout(60_000) }).catch(() => null)
+  const loc = r?.headers.get('location')
+  if (r && r.status >= 300 && r.status < 400 && loc && (loc.startsWith('/') || loc.startsWith(origin))) { redirects[p] = loc.startsWith('/') ? loc : loc.slice(origin.length); continue }
   if (!r || r.status !== 200 || !(r.headers.get('content-type') ?? '').includes('text/html')) { say(`пропущена ${p}: ${r ? r.status : 'нет ответа'}`); continue }
-  files.set(p === '/' ? '/index.html' : `${p}.html`, Buffer.from(await r.arrayBuffer()))
+  // Только статика: страница, которую сервер собирает на каждый запрос (private / no-store), из копии отдала бы чужое состояние.
+  if (/private|no-store/i.test(r.headers.get('cache-control') ?? '')) { say(`пропущена ${p}: динамическая`); continue }
+  const buf = Buffer.from(await r.arrayBuffer())
+  files.set(p === '/' ? '/index.html' : `${p}.html`, buf)
+  for (const a of alternates(buf.toString('utf8'))) if (!pagePaths.includes(a)) pagePaths.push(a)
 }
 if (files.size === 0) fail('no-pages', `сервер ${origin} не отдал ни одной страницы`)
 for (const f of ['/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/llms.txt']) {
@@ -134,13 +177,16 @@ if (files.size > 20000) fail('too-many-files', String(files.size))
 say(`копия собрана: ${files.size} файлов (страниц: ${[...files.keys()].filter((k) => k.endsWith('.html')).length - 1})`)
 // `--dry` — собрать и показать, ничего не выкладывать (проверка без ключа с правами Workers).
 if (process.argv.includes('--dry')) {
+  say(`  адреса: ${hosts.join(', ')}`)
   for (const k of [...files.keys()].filter((k) => k.endsWith('.html')).sort()) say(`  ${k} ${files.get(k).length} б`)
+  for (const [k, v] of Object.entries(redirects)) say(`  ${k} → ${v}`)
   console.log('===COPY_DRY_OK===')
   process.exit(0)
 }
 
 // ── 4. Worker: спросить дом, если файла нет в копии; дом молчит — «не в сети» ────────────────────────────────────────────────
-const WORKER = `export default {
+const WORKER = `const REDIRECTS = ${JSON.stringify(redirects)}
+export default {
   async fetch(request, env) {
     const url = new URL(request.url)
     let res = null
@@ -148,6 +194,8 @@ const WORKER = `export default {
     // Дом не на связи — только сбои связи (502–504, 52x Cloudflare, 530 туннеля); настоящая ошибка сайта (500) идёт как есть.
     const down = [502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 530]
     if (res && !down.includes(res.status)) return res
+    const to = REDIRECTS[url.pathname.replace(/\\/+$/, '') || '/']
+    if (to) return Response.redirect(new URL(to, url).toString(), 307)
     if (url.pathname === '/_next/image') {
       const src = url.searchParams.get('url')
       if (src && src.startsWith('/')) { const a = await env.ASSETS.fetch(new URL(src, url)); if (a.ok) return a }
@@ -197,27 +245,31 @@ if (!put.ok || pj.success === false) fail('script', `${put.status} ${(pj.errors 
 say(`Worker ${script} выложен`)
 
 // ── 6. Маршрут `<хост>/*`, Fail open ────────────────────────────────────────────────────────────────────────────────────────
-// Главный адрес сменился (поддомен ↔ домен) — маршрут прежнего хоста снимается: там копия больше не главная.
+// Адрес ушёл (смена главного адреса, поддомен ↔ домен) — маршрут прежнего хоста снимается: там копия больше не главная.
 const last = readJson(STATE)
-if (last?.host && last.host !== host) {
-  const oz = await cf('GET', `/zones?name=${encodeURIComponent(last.host.split('.').slice(-2).join('.'))}`)
+for (const old of (last?.hosts ?? (last?.host ? [last.host] : [])).filter((h) => !hosts.includes(h))) {
+  const oz = await cf('GET', `/zones?name=${encodeURIComponent(old.split('.').slice(-2).join('.'))}`)
   const ozid = oz.result?.[0]?.id
   const orr = ozid ? await cf('GET', `/zones/${ozid}/workers/routes`) : null
-  for (const r of orr?.result ?? []) if (r.script === script && r.pattern === `${last.host}/*`) {
+  for (const r of orr?.result ?? []) if (r.script === script && r.pattern === `${old}/*`) {
     await cf('DELETE', `/zones/${ozid}/workers/routes/${r.id}`)
     say(`снят маршрут прежнего адреса ${r.pattern}`)
   }
 }
-const pattern = `${host}/*`
-const routes = await cf('GET', `/zones/${z.id}/workers/routes`)
-if (!routes.ok) fail('routes-read', `${routes.status} ${routes.errors}`)
-const same = (routes.result ?? []).find((r) => r.pattern === pattern)
-if (same && same.script !== script) fail('route-taken', `${pattern} → ${same.script}`)
-if (!same) {
-  const add = await cf('POST', `/zones/${z.id}/workers/routes`, JSON.stringify({ pattern, script, request_limit_fail_open: true }), { 'content-type': 'application/json' })
-  if (!add.ok) fail('route', `${add.status} ${add.errors}`)
-  say(`маршрут ${pattern} → ${script} (fail open: ${add.result?.request_limit_fail_open ?? 'не сообщено'})`)
-} else say(`маршрут ${pattern} уже ведёт на ${script}`)
+for (const h of hosts) {
+  const hz = h === host ? z : (await cf('GET', `/zones?name=${encodeURIComponent(h.split('.').slice(-2).join('.'))}`)).result?.[0]
+  if (!hz) fail('zone-not-visible', h)
+  const pattern = `${h}/*`
+  const routes = await cf('GET', `/zones/${hz.id}/workers/routes`)
+  if (!routes.ok) fail('routes-read', `${routes.status} ${routes.errors}`)
+  const same = (routes.result ?? []).find((r) => r.pattern === pattern)
+  if (same && same.script !== script) fail('route-taken', `${pattern} → ${same.script}`)
+  if (!same) {
+    const add = await cf('POST', `/zones/${hz.id}/workers/routes`, JSON.stringify({ pattern, script, request_limit_fail_open: true }), { 'content-type': 'application/json' })
+    if (!add.ok) fail('route', `${add.status} ${add.errors}`)
+    say(`маршрут ${pattern} → ${script} (fail open: ${add.result?.request_limit_fail_open ?? 'не сообщено'})`)
+  } else say(`маршрут ${pattern} уже ведёт на ${script}`)
+}
 
-save({ ok: true, host, script, files: files.size, pages: pagePaths.length, version: stamp.version })
+save({ ok: true, host, hosts, script, files: files.size, pages: pagePaths.length, redirects: Object.keys(redirects).length, version: stamp.version })
 console.log('===COPY_OK===')
