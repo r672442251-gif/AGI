@@ -281,13 +281,29 @@ export async function renameElementRepo(id: string, previousAddress: string, add
   const target = repoNameFor(address)
   if (!owner || !name || name.toLowerCase() !== repoNameFor(previousAddress).toLowerCase()) return { state: "kept", from: st.repo, reason: "custom-name" }
   if (name.toLowerCase() === target.toLowerCase()) return { state: "kept", from: st.repo, reason: "same-name" }
+  const r = await renameRepoTo(id, target)
+  return r.state === "failed" && r.reason ? { ...r, reason: `${r.reason}${r.detail ? `: ${r.detail}` : ""}` } : r
+}
+
+/** Новое имя репозитория: буквы, цифры, «.», «_», «-», до 100 знаков (правило имён GitHub). */
+export const REPO_NAME = /^[A-Za-z0-9._-]{1,100}$/
+
+// 384-7 (владелец 2026-10-03: «мне нужна карточка которая позволит мне переименовать репозиторий»): переименование человеком —
+// любого подключённого репозитория элемента. Тот же путь, что вслед за элементом (384-4): GitHub → данные → карта → `origin`.
+export async function renameRepoTo(id: string, newName: string): Promise<RepoRename & { detail?: string }> {
+  const st = readStored(id)
+  if (!st.repo) return { state: "failed", reason: "not-connected" }
+  const [owner, name] = st.repo.split("/")
+  const target = newName.trim()
+  if (!REPO_NAME.test(target) || target === "." || target === "..") return { state: "failed", from: st.repo, reason: "bad-name" }
+  if (name === target) return { state: "kept", from: st.repo, reason: "same-name" }
   const { token } = tokenFor(id)
   if (!token) return { state: "failed", from: st.repo, reason: "no-token" }
   const r = await gh(token, "PATCH", `/repos/${owner}/${name}`, { name: target })
   if (r.status !== 200) {
-    const said = typeof r.body?.message === "string" ? r.body.message.slice(0, 200) : `HTTP ${r.status}`
+    const detail = typeof r.body?.message === "string" ? r.body.message.slice(0, 200) : `HTTP ${r.status}`
     const reason = r.status === 0 ? "github-unreachable" : r.status === 422 ? "name-taken" : r.status === 403 || r.status === 404 || r.status === 401 ? "no-rename-right" : "rename-failed"
-    return { state: "failed", from: st.repo, to: `${owner}/${target}`, reason: `${reason}: ${said}` }
+    return { state: "failed", from: st.repo, to: `${owner}/${target}`, reason, detail }
   }
   const full = typeof r.body?.full_name === "string" ? r.body.full_name : `${owner}/${target}`
   writeStored(id, { ...readStored(id), repo: full })

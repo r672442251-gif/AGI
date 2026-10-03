@@ -52,8 +52,13 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
   const [s, setS] = useState<State | null>(null)
   const [repo, setRepo] = useState("")
   const [token, setToken] = useState("")
-  const [busy, setBusy] = useState<"connect" | "push" | null>(null)
-  const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null)
+  const [busy, setBusy] = useState<"connect" | "push" | "rename" | null>(null)
+  // 384-6 (владелец 2026-10-03: «почему эта ответ … находится под второй карточкой хотя я вопрос задавал первой карточке»): у итога —
+  // адрес карточки, где нажата кнопка; показывается плашкой там же.
+  type Where = "connect" | "push" | "create" | "import" | "rename"
+  const [message, setMessageRaw] = useState<{ tone: "ok" | "error"; text: string; where: Where } | null>(null)
+  const setMessage = (m: { tone: "ok" | "error"; text: string; where?: Where } | null) => setMessageRaw(m ? { ...m, where: m.where ?? "connect" } : null)
+  const [renameTo, setRenameTo] = useState("")
   const [dirtyBlock, setDirtyBlock] = useState<number | null>(null)
   const url = `${BASE}/api/architect/items/${id}/github`
   // 374-6: импорт на место элемента — поля, подтверждение, ход (спрашивается кнопкой, таймеров нет).
@@ -72,8 +77,8 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
     setImportAsk(false)
     setMessage(null)
     const { status, body: d } = await call(`${url}/import`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ repo: importRepo, token: importToken }) })
-    if (!d) { setMessage({ tone: "error", text: network(status) }); return }
-    if (!d.ok) { setMessage({ tone: "error", text: err(d.error) }); return }
+    if (!d) { setMessage({ tone: "error", text: network(status), where: "import" }); return }
+    if (!d.ok) { setMessage({ tone: "error", text: err(d.error), where: "import" }); return }
     setImportToken("")
     await loadImport()
   }
@@ -91,7 +96,7 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
       const d = (r && r.ok ? await r.json().catch(() => null) : null) as { job?: { running?: boolean; results?: Array<{ id: string; ok: boolean; error?: string; detail?: string }> } } | null
       if (!d?.job?.running) {
         const mine = d?.job?.results?.find((x) => x.id === id)
-        if (mine && !mine.ok) setMessage({ tone: "error", text: `${err(mine.error)}${mine.detail ? ` — ${mine.detail}` : ""}` })
+        if (mine && !mine.ok) setMessage({ tone: "error", text: `${err(mine.error)}${mine.detail ? ` — ${mine.detail}` : ""}`, where: "create" })
         break
       }
     }
@@ -131,7 +136,14 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
     try {
       const { status, body: d } = await call(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ repo, token }) })
       if (!d) setMessage({ tone: "error", text: network(status) })
-      else if (d.ok) { setS(d as unknown as State); setToken(""); setMessage({ tone: "ok", text: ui.nextStep }) }
+      else if (d.ok) {
+        const next = d as unknown as State
+        setS(next)
+        setToken("")
+        const source = next.tokenSource === "element" ? ui.tokenOwnShort : ui.tokenNodeShort
+        setMessage({ tone: "ok", text: ui.connectOk.replace("{source}", source.replace("{tail}", next.activeTail ?? "")).replaceAll("{repo}", next.repo ?? "") })
+        announceGithubState()
+      }
       else setMessage({ tone: "error", text: err(d.error) })
     } finally { setBusy(null) }
   }
@@ -148,19 +160,58 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
     setDirtyBlock(null)
     try {
       const { status, body: d } = await call(`${url}/push`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ commit }) })
-      if (!d) { setMessage({ tone: "error", text: network(status) }); return }
+      if (!d) { setMessage({ tone: "error", text: network(status), where: "push" }); return }
       if ("repo" in d) setS(d as unknown as State)
-      if (d.ok) setMessage({ tone: "ok", text: ui.pushed.replace("{commit}", String(d.commit ?? "")) })
+      if (d.ok) setMessage({ tone: "ok", text: ui.pushed.replace("{commit}", String(d.commit ?? "")), where: "push" })
       else if (d.error === "dirty") setDirtyBlock(Number(d.dirty ?? 0))
-      else setMessage({ tone: "error", text: err(d.error) })
+      else setMessage({ tone: "error", text: err(d.error), where: "push" })
     } finally { setBusy(null) }
   }
+
+  // 384-7: «Переименовать репозиторий» — дверь `…/github/rename`; итог плашкой в карточке.
+  async function renameRepo() {
+    setBusy("rename")
+    setMessage(null)
+    try {
+      const { status, body: d } = await call(`${url}/rename`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: renameTo }) })
+      if (!d) { setMessage({ tone: "error", text: network(status), where: "rename" }); return }
+      if (d.ok) {
+        const r = d.rename as { from?: string; to?: string; state?: string } | undefined
+        setS(d as unknown as State)
+        setRepo(String((d as { repo?: string }).repo ?? ""))
+        setRenameTo("")
+        setMessage({ tone: "ok", text: r?.state === "renamed" ? ui.renamed.replace("{from}", r.from ?? "").replace("{to}", r.to ?? "") : ui.renameSame, where: "rename" })
+        announceGithubState()
+      } else setMessage({ tone: "error", text: `${err(d.error)}${d.detail ? ` (GitHub: ${String(d.detail)})` : ""}`, where: "rename" })
+    } finally { setBusy(null) }
+  }
+
+  /** Плашка итога в карточке `where`: зелёная — успех, красная — отказ с причиной. */
+  const note = (where: Where) => message?.where === where && (
+    <div
+      className={`flex items-start gap-2 rounded-md border-2 px-3 py-2.5 text-sm font-medium text-foreground ${message.tone === "ok" ? "border-success/50 bg-success/10" : "border-destructive/60 bg-destructive/10"}`}
+      role={message.tone === "ok" ? "status" : "alert"}
+      data-element-github-message={message.tone}
+      data-element-github-message-where={where}
+    >
+      {message.tone === "ok" ? <CircleCheck className="mt-0.5 size-5 shrink-0 text-success" aria-hidden /> : <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />}
+      <p>{message.text}</p>
+    </div>
+  )
 
   const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(lang) : null)
   const row = (label: string, value: ReactNode) => (
     <div className="flex flex-wrap gap-x-2 text-sm"><span className="text-muted-foreground">{label}:</span><span className="font-mono">{value}</span></div>
   )
 
+  // Какой токен работает сейчас — строкой над каждым полем токена (поправка владельца: поле не говорит «пусто»).
+  const activeLine = !s ? null : s.tokenSource === "element" ? ui.activeElement.replace("{tail}", s.activeTail ?? "") : s.tokenSource === "node" ? ui.activeNode.replace("{tail}", s.activeTail ?? "") : ui.activeNone
+  const active = activeLine && (
+    <p className={`flex items-center gap-1.5 text-sm font-medium ${s?.tokenSource ? "text-foreground" : "text-destructive"}`} data-element-github-active={s?.tokenSource ?? "none"}>
+      {s?.tokenSource ? <CircleCheck className="size-4 shrink-0 text-success" aria-hidden /> : <TriangleAlert className="size-4 shrink-0" aria-hidden />}
+      {activeLine}
+    </p>
+  )
   const importKey = imp?.state === "done" && imp.detached ? "detached" : imp?.state ?? "none"
   return (
     <TooltipProvider>
@@ -185,6 +236,7 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
               </Button>
               <Help text={ui.pushHelp} />
             </div>
+            {note("push")}
             {dirtyBlock !== null && (
               <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-3" role="status" data-element-github-dirty={dirtyBlock}>
                 <div className="flex items-start gap-1">
@@ -210,6 +262,26 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
               {creating ? ui.creatingRepo : ui.createRepo}
             </Button>
           </div>
+        )}
+        {note("create")}
+        {s?.repo && (
+          <section className="flex flex-col gap-3 rounded-lg border border-border p-3" data-element-github-rename>
+            <div className="flex items-center gap-1">
+              <H4 variant="ui">{ui.renameTitle}</H4>
+              <Help text={ui.renameHelp} />
+            </div>
+            {row(ui.renameCurrent, s.repo)}
+            <form className="flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); void renameRepo() }}>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor={`gh-rename-${id}`}>{ui.renameLabel}</Label>
+                <Input id={`gh-rename-${id}`} value={renameTo} onChange={(e) => setRenameTo(e.target.value)} placeholder={s.repo.split("/")[1] ?? ""} autoComplete="off" spellCheck={false} className="max-w-72 font-mono" />
+              </div>
+              <Button type="submit" variant="outline" disabled={!renameTo.trim() || renameTo.trim() === s.repo.split("/")[1] || busy !== null} data-element-github-rename-button>
+                {busy === "rename" ? ui.renaming : ui.renameButton}
+              </Button>
+            </form>
+            {note("rename")}
+          </section>
         )}
         {s && !s.tokenSource && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border-2 border-destructive/60 bg-destructive/10 px-3 py-2 text-sm" role="alert" data-element-github-plate="no-token">
@@ -245,6 +317,7 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
               <Label htmlFor={`gh-repo-${id}`}>{ui.repoLabel}</Label>
               <Input id={`gh-repo-${id}`} value={repo} onChange={(e) => setRepo(e.target.value)} placeholder={ui.repoPlaceholder} autoComplete="off" spellCheck={false} className="font-mono" />
             </div>
+            {active}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1">
                 <Label htmlFor={`gh-token-${id}`}>{ui.tokenLabel}</Label>
@@ -257,6 +330,7 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
               {busy === "connect" ? ui.connecting : ui.connect}
             </Button>
           </form>
+          {note("connect")}
           {s?.tokenTail && (
             <div className="flex flex-col gap-1 rounded-lg border border-border p-3" data-element-github-state>
               {s.login && row(ui.account, s.login)}
@@ -274,6 +348,7 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
             <Label htmlFor={`gh-import-repo-${id}`}>{ui.importRepo}</Label>
             <Input id={`gh-import-repo-${id}`} value={importRepo} onChange={(e) => setImportRepo(e.target.value)} placeholder="owner/name" autoComplete="off" spellCheck={false} className="font-mono" />
           </div>
+          {active}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1">
               <Label htmlFor={`gh-import-token-${id}`}>{ui.importToken}</Label>
@@ -298,13 +373,9 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
               <Button type="button" variant="ghost" size="sm" onClick={() => { void loadImport(); void load() }}>{ui.importRefresh}</Button>
             </div>
           )}
+          {note("import")}
         </section>
 
-        {message && (
-          <p className={`text-sm ${message.tone === "error" ? "text-destructive" : "text-foreground"}`} role="status" data-element-github-message={message.tone}>
-            {message.text}
-          </p>
-        )}
       </div>
     </TooltipProvider>
   )
