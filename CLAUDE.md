@@ -658,6 +658,9 @@ Dashboard) are CHANGED by the person exactly like born ones — «их отли�
   folder's `origin`. A repository the person connected under their own name keeps it. GitHub refusal does not undo the element rename —
   the reason comes back in `repo` and the settings card shows it after the page moves (sessionStorage). Source docs.github.com «Renaming a
   repository»: pushes/clones to the old name keep working; 🛑 never create a new repository with the old name — the redirect breaks.
+- **384-6/7:** every button's result is a plate INSIDE its own card (owner: the answer sat under the second card); «Check and save» →
+  big green «the token is confirmed as active … can write to <repo>». 🛑 It never promises sending on Deploy — no such behaviour exists.
+  Card «Rename the repository» → `POST …/github/rename {name}` → `renameRepoTo` (any connected repository, by the person's hand).
 
 ## Dashboard → Projects — every AGI ITEM in one table (node step 339)
 
