@@ -89,6 +89,26 @@
       "port": 24684,
       "address": "blocks",
       "github": "r672442251-gif/agi-blocks"
+    },
+    {
+      "id": "v972t",
+      "repo": "https://github.com/Fractera/fractera-item-starter.git",
+      "version": "v0.3.62",
+      "born": {
+        "from": "fractera-item-starter",
+        "version": "v0.3.62",
+        "at": "2026-10-03T20:14:24.979Z"
+      },
+      "provides": [
+        "element-site"
+      ],
+      "designSkill": "impeccable",
+      "required": false,
+      "note": "Рождён из fractera-item-starter v0.3.62 (319). Самостоятельный проект: установщик его код не трогает.",
+      "kind": "user",
+      "port": 24690,
+      "address": "v972t",
+      "github": "r672442251-gif/agi-v972t"
     }
   ]
 }
