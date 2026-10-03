@@ -1,4 +1,4 @@
-// @api rename an element's GitHub repository
+// @api rename an element's GitHub repository and record the new name
 import { NextRequest, NextResponse } from "next/server"
 import { requireRoles } from "@/lib/auth/require-roles"
 import { isTemporaryPublicAddress } from "@/lib/auth/temporary-address"
