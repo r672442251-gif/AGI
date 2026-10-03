@@ -39,7 +39,15 @@ function slugOf(url) {
   return m ? `${m[1]}/${m[2]}`.toLowerCase() : null
 }
 
-const remote = spawnSync('git', ['-C', root, 'remote', 'get-url', 'origin'], { encoding: 'utf8', windowsHide: true })
+// 383 (владелец 2026-10-03: «почини красный крестик в Actions»): проверка трёх систем (`.github/workflows/three-os.yml`) собирает
+// САМ оригинал — узла там не ставят, и отказ «это сам оригинал» держал её красной с 368 (76bca67). Пропуск — только прогон GitHub
+// Actions в репозитории оригинала; форк в своих Actions проверяется как обычно. Переменные подменяемы — как и весь файл до обфускации.
+if (process.env.GITHUB_ACTIONS === 'true' && String(process.env.GITHUB_REPOSITORY ?? '').toLowerCase() === ORIGINAL) {
+  console.log(`===ORIGIN_CI=== ${ORIGINAL}: сборка-проверка GitHub Actions самого оригинала, узел не ставится`)
+  process.exit(0)
+}
+
+const remote = spawnSync('git',['-C', root, 'remote', 'get-url', 'origin'], { encoding: 'utf8', windowsHide: true })
 const url = remote.status === 0 ? remote.stdout.trim() : ''
 const slug = slugOf(url)
 if (!slug) refuse(url ? `Адрес репозитория узла «${url}» — не GitHub.` : 'У папки узла нет адреса репозитория (git remote origin) — узел поставлен не клонированием форка.')
