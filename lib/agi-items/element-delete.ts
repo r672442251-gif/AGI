@@ -5,6 +5,7 @@ import { rename, rm } from "node:fs/promises"
 import { join } from "node:path"
 import paths from "@/lib/agi-items/paths.cjs"
 import { deleteDraft } from "@/lib/agi-items/drafts"
+import { startStaticCopy } from "@/lib/agi-items/static-copy-start.cjs"
 import { addressOf } from "@/lib/agi-items/address-file.mjs"
 import { accountOfZone, deleteDnsRecords, getIngress, listZones, setIngress } from "@/lib/domain/cloudflare"
 
@@ -149,6 +150,16 @@ export async function deleteElement(id: string): Promise<{ ok: boolean; steps: S
 
   // 4. Черновик, 5. данные элемента, 6. журналы рождения.
   steps.push({ step: "draft", ok: deleteDraft(id) })
+  // 385-3: копия в Cloudflare уходит вместе с элементом — иначе его адрес продолжал бы отдавать страницы удалённого. Состояние
+  // копии передаётся файлом: папка данных стирается следующей строкой, раньше, чем выкладка успеет её прочитать.
+  try {
+    const copy = join(ROOT, "data", "services", id, "static-copy.json")
+    if (existsSync(copy) && (JSON.parse(readFileSync(copy, "utf8")) as { ok?: boolean }).ok) {
+      const keep = join(ROOT, "logs", `static-copy-removal-${id}.json`)
+      writeFileSync(keep, readFileSync(copy))
+      startStaticCopy(ROOT, id, ["--remove", `--state=${keep}`])
+    }
+  } catch { /* копии не было или файл битый — снимать нечего */ }
   rmSync(join(ROOT, "data", "services", id), { recursive: true, force: true })
   steps.push({ step: "data", ok: !existsSync(join(ROOT, "data", "services", id)) })
   // Журналы рождения и журналы процесса элемента (pm2 закрыл их на этапе 1).

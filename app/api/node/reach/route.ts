@@ -8,6 +8,7 @@ import { requireRoles } from "@/lib/auth/require-roles"
 import { getService, serviceUrl } from "@/lib/microservices/registry"
 import { accountOfZone, getIngress, hasDnsRecord, listZones, setIngress, upsertTunnelRecord } from "@/lib/domain/cloudflare"
 import { addressOf } from "@/lib/agi-items/address-file.mjs"
+import { startStaticCopy } from "@/lib/agi-items/static-copy-start.cjs"
 
 // АДРЕС СЛУЖБЫ В ИНТЕРНЕТЕ (шаг 289-2).
 //
@@ -168,5 +169,6 @@ export async function POST(req: NextRequest) {
     const rec = await upsertTunnelRecord(cf.key, cf.zoneId, hostname, cf.tunnelId)
     if (!rec.ok) return NextResponse.json({ ok: false, reason: rec.reason }, { status: 502 })
   }
+  startStaticCopy(process.cwd(), id) // 385-3: поддомен элемента подключён — копия его статических страниц в Cloudflare
   return NextResponse.json(await measure(id))
 }

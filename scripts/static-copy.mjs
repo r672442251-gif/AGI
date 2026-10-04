@@ -40,6 +40,13 @@ if (id === '--all') {
   const { spawnSync } = await import('node:child_process')
   const ALL_LOG = join(ROOT, 'logs', 'static-copy-all.log')
   const note = (m) => { const l = `${new Date().toISOString()} ${m}`; console.log(l); try { appendFileSync(ALL_LOG, l + '\n') } catch { /* не главное */ } }
+  // 385-3: один проход за раз. Кнопка «Обновить копии» и подключение домена могут совпасть — второй проход выходит, а не выкладывает
+  // те же Worker параллельно. Замок с pid: процесс умер (пересборка, выключение) — замок не держит (тот же приём, что у 337).
+  const LOCK = join(ROOT, 'logs', 'static-copy-all.lock.json')
+  const held = readJson(LOCK)
+  if (held?.pid && held.pid !== process.pid) { try { process.kill(held.pid, 0); note(`проход уже идёт (pid ${held.pid}) — второй не начинается`); console.log('===COPY_ALL_BUSY==='); process.exit(0) } catch { /* умер — замок ничей */ } }
+  try { mkdirSync(join(ROOT, 'logs'), { recursive: true }); writeFileSync(LOCK, JSON.stringify({ pid: process.pid, at: new Date().toISOString() }) + '\n') } catch { /* без замка — как до 385-3 */ }
+  process.on('exit', () => { try { if (readJson(LOCK)?.pid === process.pid) writeFileSync(LOCK, '{}\n') } catch { /* не главное */ } })
   const tok = (() => { try { return readFileSync(join(ROOT, '.env.local'), 'utf8') } catch { return '' } })().match(/^CLOUDFLARE_API_TOKEN=(.*)$/m)?.[1]?.trim()
   const node = readJson(join(ROOT, 'logs', 'domain.json'))
   let ports = new Set()
@@ -76,7 +83,9 @@ const token0 = envText0.match(/^CLOUDFLARE_API_TOKEN=(.*)$/m)?.[1]?.trim()
 // `--remove` (344-3): домен отключён от элемента — снять маршрут и Worker копии, иначе Cloudflare раздавал бы старые страницы
 // отключённого домена, а всё остальное отвечало бы «не в сети». Хост и имя — из прошлой выкладки (`static-copy.json`).
 if (process.argv.includes('--remove')) {
-  const last = readJson(STATE)
+  // `--state=<файл>` (385-3): элемент удаляется, его `data/services/<id>` стирается сразу — состояние приходит копией.
+  const stateArg = process.argv.find((a) => a.startsWith('--state='))?.slice('--state='.length)
+  const last = readJson(stateArg || STATE)
   if (!last?.host || !last?.script || !token0) { say('снимать нечего'); console.log('===COPY_REMOVED==='); process.exit(0) }
   const h = { Authorization: `Bearer ${token0}` }
   let account = null
@@ -119,7 +128,18 @@ const domain = readJson(join(ROOT, 'data', 'services', id, 'domain.json'))
 let hosts = domain?.url ? [new URL(domain.url).host] : []
 if (!hosts.length) {
   const node = readJson(join(ROOT, 'logs', 'domain.json'))
-  if (!node?.zone || !node?.tunnelId) fail('no-address', 'у узла нет своего домена — копия нужна только адресам в зоне человека')
+  // 385-3: адреса нет — это не отказ, а отсутствие предмета. Прошлая копия есть — она снимается (иначе Cloudflare раздавал бы
+  // страницы адреса, которого у элемента больше нет); нет — выходим молча, не затирая состояние ложным отказом.
+  const noAddress = async (why) => {
+    if (readJson(STATE)?.ok) {
+      const { spawnSync } = await import('node:child_process')
+      say(`адреса больше нет (${why}) — прежняя копия снимается`)
+      spawnSync(process.execPath, [join(ROOT, 'scripts', 'static-copy.mjs'), id, '--remove'], { cwd: ROOT, stdio: 'inherit', windowsHide: true })
+    } else say(`адреса нет (${why}) — копия не нужна`)
+    console.log('===COPY_NO_ADDRESS===')
+    process.exit(0)
+  }
+  if (!node?.zone || !node?.tunnelId) await noAddress('у узла нет своего домена')
   const nz = await cf('GET', `/zones?name=${encodeURIComponent(node.zone)}`)
   const nzr = nz.result?.[0]
   if (!nz.ok || !nzr) fail('zone-not-visible', nz.errors)
@@ -127,7 +147,7 @@ if (!hosts.length) {
   if (!ing.ok) fail('tunnel-not-visible', `${ing.status} ${ing.errors}`)
   const portOf = (s) => { try { return Number(new URL(s).port) } catch { return 0 } }
   hosts = (ing.result?.config?.ingress ?? []).filter((r) => r.hostname && portOf(r.service) === Number(stamp.port)).map((r) => r.hostname)
-  if (!hosts.length) fail('no-address', `в туннеле нет адреса, ведущего на порт ${stamp.port}`)
+  if (!hosts.length) await noAddress(`в туннеле нет адреса, ведущего на порт ${stamp.port}`)
 }
 const host = hosts[0]
 

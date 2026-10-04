@@ -5,6 +5,7 @@ import { accountOfZone, deleteTunnelRecord, getIngress, listZones, setIngress, u
 import { envValue } from "@/lib/agi-items/element-delete"
 import { serviceUrl } from "@/lib/microservices/registry"
 import { domainRecord } from "@/lib/agi-items/element-domain"
+import { startStaticCopy } from "@/lib/agi-items/static-copy-start.cjs"
 
 // ПОДДОМЕН ПЕРЕЕЗЖАЕТ ВМЕСТЕ С АДРЕСОМ ЭЛЕМЕНТА (решение владельца 2026-10-01: «Да, переноси поддомен при переименовании и убери
 // старый dhndy»). 🪦 Отменяет «поддомен не трогается» шага 325-3: с 325-8 поддомен элемента = его адрес, и после переименования
@@ -49,5 +50,6 @@ export async function moveSubdomain(id: string, from: string, to: string): Promi
     const del = await deleteTunnelRecord(key, zone.id, h, domain.tunnelId)
     steps.push({ step: "dns-old", ok: del.ok, detail: del.ok ? `${h}:${del.result}` : del.reason })
   }
+  if (rec.ok) startStaticCopy(process.cwd(), id) // 385-3: адрес переехал — копия встаёт на новый, маршрут прежнего снимается
   return { moved: rec.ok, steps }
 }
