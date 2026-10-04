@@ -6,6 +6,7 @@ import { isLoopbackHostname } from "@/lib/auth/owner-at-machine"
 import { CircleHelp, Copy, ExternalLink, Highlighter, PanelRightClose, RefreshCw, Search, SquareTerminal } from "lucide-react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { WebPreview, WebPreviewBody, WebPreviewNavigation, WebPreviewUrl } from "@/components/ai-elements/web-preview"
 import { useScreenScale } from "./use-screen-scale.client"
@@ -48,6 +49,10 @@ export type ElementPreviewWords = {
   /** 2026-10-01: ядро на https, у элемента нет подключённого имени — браузер не пустит локальный адрес во фрейм. */
   blockedHttps: string
   openNew: string
+  /** 393: два режима «Открыть в новой вкладке». */
+  openDev: string
+  openProd: string
+  openProdNone: string
   /** 372-4: на временном адресе — та же страница пульта на этом компьютере, где просмотр работает. */
   openHere: string
   reload: string
@@ -105,7 +110,7 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? ""
 /** `terminalService` — сегмент страницы терминала в `/architect/<…>/terminal`: у служб ядра это их id (по умолчанию), у рождённого
  *  элемента — `<адрес>/build` (356: по id элемента ссылка вела на страницу ошибки). */
 export function ElementPreview({ serviceId, terminalService, lang, words, task }: { serviceId: string; terminalService?: string; lang: string; words: ElementPreviewWords; task?: PreviewTaskKit }) {
-  const [state, setState] = useState<{ url: string } | "loading" | "failed">("loading")
+  const [state, setState] = useState<{ url: string; publicUrl?: string | null } | "loading" | "failed">("loading")
   // Адрес, открытый в просмотре СЕЙЧАС (человек мог перейти внутри): его и открывает кнопка «в новой вкладке».
   const [current, setCurrent] = useState<string | null>(null)
   const [frameKey, setFrameKey] = useState(0)
@@ -138,7 +143,7 @@ export function ElementPreview({ serviceId, terminalService, lang, words, task }
     let alive = true
     fetch(`${BASE}/api/node/preview-url?id=${encodeURIComponent(serviceId)}&lang=${encodeURIComponent(lang)}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((d: { url: string }) => alive && setState(d))
+      .then((d: { url: string; publicUrl?: string | null }) => alive && setState(d))
       .catch(() => alive && setState("failed"))
     return () => {
       alive = false
@@ -182,6 +187,8 @@ export function ElementPreview({ serviceId, terminalService, lang, words, task }
   }
 
   const page = current ?? state.url
+  // 393: тот же путь, что в рамке, по адресу элемента в интернете.
+  const publicPage = state.publicUrl ? (() => { const u = new URL(page); return `${state.publicUrl}${u.pathname}${u.search}${u.hash}` })() : null
 
   async function redraw() {
     setReload("busy")
@@ -307,17 +314,30 @@ export function ElementPreview({ serviceId, terminalService, lang, words, task }
           {/* Слово владельца 2026-09-25: «добавь кнопку открыть страницу в новой вкладке чтобы из превью можно было уйти
               сразу в работу на суб домен или домен если это про root». Ссылка, а не кнопка со скриптом: открывается и
               без JavaScript. */}
-          <a
-            href={page}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonVariants({ variant: "outline", size: "sm", className: "shrink-0 gap-1.5" })}
-            aria-label={words.openNew}
-            title={compact ? words.openNew : undefined}
-          >
-            <ExternalLink className="size-4" aria-hidden />
-            {!compact && words.openNew}
-          </a>
+          {/* 393 (владелец 2026-10-04: «при нажатии на эту кнопку … два режима: превью режим разработки и привью продакшен»):
+              режим разработки — эта же страница на этом компьютере; продакшн — тот же путь по адресу элемента в интернете. */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label={words.openNew} title={compact ? words.openNew : undefined} data-preview-open>
+                <ExternalLink className="size-4" aria-hidden />
+                {!compact && words.openNew}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="flex w-72 flex-col gap-1 p-2" data-preview-open-menu>
+              <a href={page} target="_blank" rel="noopener noreferrer" className="rounded-md px-2 py-1.5 text-sm hover:bg-muted" data-preview-open-dev>
+                {words.openDev}
+                <span className="block break-all font-mono text-xs text-muted-foreground">{new URL(page).host}</span>
+              </a>
+              {publicPage ? (
+                <a href={publicPage} target="_blank" rel="noopener noreferrer" className="rounded-md px-2 py-1.5 text-sm hover:bg-muted" data-preview-open-prod>
+                  {words.openProd}
+                  <span className="block break-all font-mono text-xs text-muted-foreground">{new URL(publicPage).host}</span>
+                </a>
+              ) : (
+                <p className="px-2 py-1.5 text-sm text-muted-foreground" data-preview-open-prod-none>{words.openProdNone}</p>
+              )}
+            </PopoverContent>
+          </Popover>
           <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={redraw} disabled={reload === "busy"} aria-label={words.reload} title={compact ? words.reload : undefined} data-preview-reload>
             <RefreshCw className={`size-4${reload === "busy" ? " animate-spin" : ""}`} aria-hidden />
             {!compact && words.reload}
