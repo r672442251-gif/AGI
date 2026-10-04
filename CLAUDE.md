@@ -641,6 +641,16 @@ the anchor block (`id` or `data-block`). **Reject** opens `_tools/block-task` in
 `/<lang>/architect/<address>/build/terminal?paste=…` — a born element's terminal is under `build/`, not the core-service path of
 `terminalLink` (measured: that one is an error page). Attention dot and lists in «My account» — 356-1.
 
+**Roll back to a version (node step 322, owner 2026-10-04: «откат новым коммитом», «Сохранить и откатить»).** On Deployments:
+pick a version (the same rows as the table) → «Roll back to a version» → confirmation naming the version and the unsaved files.
+`POST /api/architect/items/<id>/rollback {commit}` (`lib/agi-items/element-rollback.ts`): the commit must be in the element's
+history; unsaved agent files are committed first («Saved before rollback»); the files of the chosen version land as a NEW commit
+«Rollback to <hash>» — history is never rewritten, and the previous state is one more rollback away; node-written files
+(`NODE_WRITES`: DESIGN-CONFIG, APP-CONFIG, PLATFORM-CONFIG, tsconfig, next-env, install stamp) are not rolled back; the element is
+rebuilt by the Deploy path (next to the running one; a failed build leaves the running version). Refusals: `not-in-history`,
+`same-version`, `deploy-running`, `preview-pending`, `temporary-address`. 🛑 A Windows `next build` can fail on «Collecting page
+data» with `kill EPERM` twice in a row (measured on the 322 probe) — the rollback commit stays, press «Deploy» again.
+
 ## AGI ITEM repositories — one fork, the key later, a private repository per element (node step 374)
 
 Owner 2026-10-02: «–пользователь делает только один Fork – отправляет его репозитории GitHub – запускает проекты и начинает им
