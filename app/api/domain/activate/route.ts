@@ -12,6 +12,7 @@ import {
 import { serviceUrl } from "@/lib/microservices/registry"
 import { startDomainResident } from "@/lib/domain/resident"
 import { applyDomainToAuth } from "@/lib/domain/auth-env"
+import { startStaticCopyAll } from "@/lib/agi-items/static-copy-start.cjs"
 
 // ДВЕРЬ АКТИВАЦИИ ДОМЕНА (259-3).
 //
@@ -222,6 +223,9 @@ export async function POST(req: NextRequest) {
   // `logs/domain.json`, а житель туннеля — только что записанный токен.
   const auth = authHostname ? applyDomainToAuth() : { files: 0, restarted: false, reason: "no-auth-service" }
   const resident = startDomainResident()
+  // 385-3: главный домен подключён — копия в Cloudflare каждому адресу узла (корень → root, поддомены элементов). Владелец
+  // 2026-10-03: «Да, главный домен тоже». Выкладка вне дерева ядра, итог — строки на этой же странице.
+  startStaticCopyAll(ROOT)
   // 324-1: страница «Активация домена» скрывает тексты «как получить домен», когда он подключён — перерисовать слой.
   revalidatePath("/[lang]", "layout")
 

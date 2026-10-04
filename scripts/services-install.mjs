@@ -1068,6 +1068,10 @@ if (failed > 0) {
   process.exit(1)
 }
 
+// 385-3: полная установка пересобрала все элементы — копия в Cloudflare каждому адресу узла (одиночную `--only` копирует
+// `scripts/deploy-elements.mjs` сам). Узел без своего домена — ничего не запускается.
+if (!ONLY && require('../lib/agi-items/static-copy-start.cjs').startStaticCopyAll(ROOT)) say('\n  копии публичных страниц в Cloudflare обновляются в фоне — итог на «Активации домена»')
+
 say('\n🛑 После установки узлу нужна ПЕРЕСБОРКА: npm run serve:rebuild — значения')
 say('   NEXT_PUBLIC_* запекаются в сборку, и без неё правка не применится.')
 say('===SERVICES_INSTALL_OK===')

@@ -9,6 +9,23 @@
 // 🔒 МОДУЛЬ СЕРВЕРНЫЙ. Островок получает уже выбранный язык пропсами — сторож
 // `check-lang-delivery` следит, чтобы словарь не уехал в браузер целиком.
 
+export type StaticCopyWords = {
+  title: string
+  lead: string
+  refresh: string
+  running: string
+  started: string
+  check: string
+  empty: string
+  updated: string
+  files: string
+  failed: string
+  noDomain: string
+  temporary: string
+  error: string
+  noWorkers: string
+}
+
 export type DomainLadderWords = {
   lead: string
   step1Title: string
@@ -35,6 +52,8 @@ export type DomainLadderWords = {
   nodeAddress: string
   quickAddress: string
   liveAddress: string
+  /** 385-3: копия публичных страниц в Cloudflare по каждому адресу узла. */
+  copy: StaticCopyWords
   quickRetired: string
   loading: string
   soon: string
@@ -144,6 +163,22 @@ const W: Record<string, DomainLadderWords> = {
     nodeAddress: "Node address",
     quickAddress: "Temporary address in use",
     liveAddress: "Your address in the internet",
+    copy: {
+      title: "Copy in Cloudflare",
+      lead: "Cloudflare keeps a copy of the public pages of every address, so the site stays visible while this computer is off. Sign-in and everything private answer only while the computer is on. The copy refreshes by itself after Accept, Deploy and connecting a domain.",
+      refresh: "Refresh copies",
+      running: "Copies are being refreshed — this takes a few minutes. Check again later.",
+      started: "Started. Every address is copied one after another.",
+      check: "Check",
+      empty: "No copies yet. Press Refresh copies.",
+      updated: "updated",
+      files: "files",
+      failed: "not copied",
+      noDomain: "Copies appear after your own domain is connected.",
+      temporary: "Copies can be refreshed only from this computer, not over the temporary address.",
+      error: "The node did not answer.",
+      noWorkers: "the node's Cloudflare key has no Workers rights — add them on the «Node key» card",
+    },
     quickRetired: "The temporary address is still running and is no longer needed — stop it with npm run serve:unpublish",
     loading: "Reading the node state…",
     soon: "Built in the next sub-step.",
@@ -276,6 +311,22 @@ const W: Record<string, DomainLadderWords> = {
     nodeAddress: "Адрес узла",
     quickAddress: "Сейчас работает временный адрес",
     liveAddress: "Ваш адрес в интернете",
+    copy: {
+      title: "Копия в Cloudflare",
+      lead: "Cloudflare хранит копию публичных страниц каждого адреса, поэтому сайт виден, даже когда этот компьютер выключен. Вход и всё закрытое отвечают, только пока компьютер включён. Копия обновляется сама после «Принять», «Развернуть» и подключения домена.",
+      refresh: "Обновить копии",
+      running: "Копии обновляются — это займёт несколько минут. Проверьте позже.",
+      started: "Запущено. Адреса копируются по очереди.",
+      check: "Проверить",
+      empty: "Копий пока нет. Нажмите «Обновить копии».",
+      updated: "обновлена",
+      files: "файлов",
+      failed: "не скопировано",
+      noDomain: "Копии появятся после подключения своего домена.",
+      temporary: "Обновить копии можно только с этого компьютера, не через временный адрес.",
+      error: "Узел не ответил.",
+      noWorkers: "у ключа Cloudflare узла нет прав Workers — добавьте их на карточке «Ключ узла»",
+    },
     quickRetired: "Временный адрес ещё работает и больше не нужен — остановить его: npm run serve:unpublish",
     loading: "Читаю состояние узла…",
     soon: "Строится в следующем подшаге.",

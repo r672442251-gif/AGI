@@ -241,6 +241,8 @@ export async function detachDomain(id: string): Promise<{ ok: true } | Fail> {
   if (zone.ok && zone.result) for (const h of [name, www]) await deleteTunnelRecord(t.key, zone.result.id, h, t.tunnelId)
   try { rmSync(join(DATA, id, "domain.json"), { force: true }) } catch { return { ok: false, error: "write-failed" } }
   await redrawElement(id)
-  startStaticCopy(process.cwd(), id, ["--remove"]) // 344-3: домен отключён — копия и её маршрут снимаются
+  // 344-3 → 385-3: домен отключён. Поддомен остался — копия переезжает на него (прежний маршрут снимается самим скриптом); нет —
+  // копия и её маршрут снимаются.
+  startStaticCopy(process.cwd(), id, hadSub ? [] : ["--remove"])
   return { ok: true }
 }

@@ -484,9 +484,20 @@ folder and `public/`, plus an offline page, and publishes it to the Worker `frac
 account (Direct Upload, three REST calls — no wrangler) with route `<main host>/*`, `request_limit_fail_open: true`,
 `html_handling: drop-trailing-slash`. Files in the copy are served by Cloudflare; anything else the Worker asks home through the
 tunnel; home down (502–504, 52x, 530) → `/_next/image` falls back to the original file, everything else → 503 «the site owner is
-offline». Measured on aifa.dev with the node tunnel stopped: public pages 200, sign-in 503. Runs by itself via
-`lib/agi-items/static-copy-start.cjs`: after Accept and Deploy, on connecting an own domain or changing the main address;
-`--remove` on detaching; `--dry` collects only. State `data/services/<id>/static-copy.json`, shown on the element's Deployments.
+offline». Measured on aifa.dev with the node tunnel stopped: public pages 200, sign-in 503.
+🔒 **Every address of the node gets a copy, not only an element's own domain (step 385, owner 2026-10-03: «Да, главный домен
+тоже», «каждый из них имеет свой рут статик»).** Hosts come from the node tunnel's ingress as it IS: the main domain → `root`,
+`<address>.<zone>` → its element; `architect.` leads to the core and is skipped; an own domain of an element is its only host.
+`static-copy.mjs --all` walks every element one at a time (400 MB machines), removes the copy of an element whose address is gone,
+holds a pid lock (`logs/static-copy-all.lock.json`), summary `logs/static-copy-all.log`. An element without an address records
+nothing (`===COPY_NO_ADDRESS===`). The temporary trycloudflare address gets no copy — its zone is not the person's.
+Runs by itself via `lib/agi-items/static-copy-start.cjs` (one launcher, outside the core's process tree), only on a person's
+action, no timers: Accept, Deploy, own domain connected / main address changed (element), detached → moves to the subdomain or is
+removed, subdomain connected (`/api/node/reach`) or moved (`element-subdomain.ts`), element deleted (`--remove --state=`), main
+domain activated and full `services:install` → `--all`. «Update» is a merge without a build: the next Deploy copies.
+Domain activation shows the card «Copy in Cloudflare» (`components/domain/static-copy.client.tsx`, door `GET/POST
+/api/domain/static-copy`): a row per address (time, files, refusal with reason) and «Refresh copies». State per element
+`data/services/<id>/static-copy.json`, also shown on the element's Deployments; `--dry` collects only.
 🔒 **Cost: none on Workers Free** — static asset requests are free and unlimited; overflow of 100,000 Worker requests a day is a
 refusal, never a bill, and fail open sends it home. 🛑 **Cloudflare's HTML cache is not a substitute**: «Retention … is not
 configurable» and `stale-if-error` needs an origin 5xx, not a dead tunnel. 🔒 **The key's Workers rights come only through the
