@@ -2,8 +2,8 @@
 
 import { Check, CircleAlert, Clock, LoaderCircle, Minus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
+import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { H3 } from "@/components/ui/typography"
 import { isTemporaryHostname } from "@/lib/auth/temporary-address"
 import type { StaticCopyWords } from "@/components/domain/domain-ladder.i18n"
 
@@ -27,7 +27,8 @@ type Job = {
 }
 type Answer = { ok: boolean; domain: boolean; hostsKnown: boolean; job: Job | null; rows: Row[] }
 
-export function StaticCopyCard({ lang, words: w }: { lang: string; words: StaticCopyWords }) {
+/** Карточка аккордеона списка доменов (`domain-list.client.tsx`), рядом с основным доменом; значок итога — в заголовке. */
+export function StaticCopyItem({ lang, words: w }: { lang: string; words: StaticCopyWords }) {
   const [data, setData] = useState<Answer | null>(null)
   const [failed, setFailed] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -102,10 +103,29 @@ export function StaticCopyCard({ lang, words: w }: { lang: string; words: Static
   const total = liveJob?.total ?? 0
   const ready = liveJob?.done ?? 0
   const currentPlan = liveJob?.plan?.find((p) => p.id === liveJob.current)
+  // Значок заголовка: сколько адресов узла с копией из тех, у кого адрес есть.
+  const withAddress = (data?.rows ?? []).filter((r) => r.hosts && r.hosts.length).length
+  const copied = (data?.rows ?? []).filter((r) => r.hosts && r.hosts.length && r.copy?.ok).length
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4" data-static-copy-card>
-      <H3 variant="ui">{w.title}</H3>
+    <AccordionItem value="static-copy" data-domain-card="static-copy">
+      <AccordionTrigger>
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-medium">{w.title}</span>
+          {running ? (
+            <span className="inline-flex items-center gap-1 rounded-md border border-primary/50 px-1.5 text-[length:var(--fs-small)] text-primary" data-static-copy-badge="running">
+              <LoaderCircle className="size-3 animate-spin" aria-hidden />
+              {w.badgeRunning.replace("{done}", String(ready)).replace("{total}", String(total))}
+            </span>
+          ) : withAddress ? (
+            <span className={`rounded-md border px-1.5 text-[length:var(--fs-small)] ${copied === withAddress ? "border-success/50 text-success" : "border-destructive/50 text-destructive"}`} data-static-copy-badge={`${copied}/${withAddress}`}>
+              {w.badgeCopied.replace("{ok}", String(copied)).replace("{all}", String(withAddress))}
+            </span>
+          ) : null}
+        </span>
+      </AccordionTrigger>
+      <AccordionContent>
+    <section className="flex flex-col gap-3" data-static-copy-card>
       <p className="text-muted-foreground text-sm">{w.lead}</p>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -218,5 +238,7 @@ export function StaticCopyCard({ lang, words: w }: { lang: string; words: Static
         </ul>
       ) : null}
     </section>
+      </AccordionContent>
+    </AccordionItem>
   )
 }

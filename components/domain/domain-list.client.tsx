@@ -9,6 +9,7 @@ import type { DomainListWords } from "./domain-list.i18n"
 import type { DomainLadderWords } from "./domain-ladder.i18n"
 import { DomainPipeline, type PipelineDomain } from "./domain-pipeline.client"
 import { DomainKey, type NodeKey } from "./domain-key.client"
+import { StaticCopyItem } from "./static-copy.client"
 
 // ДОМЕНЫ УЗЛА АККОРДЕОНОМ (324-1). Слово владельца 2026-09-27: «превратить в карточке аккордеона … показывают только одну
 // активную карточку … первую карточку … первого домена … подключать больше доменов сколько угодно».
@@ -92,6 +93,9 @@ export function DomainList({ lang, words: w, ladderWords, ladder }: { lang: stri
           {/* 324-2: основного домена нет — лестница не нужна: любой домен проходит свой путь ниже и там же становится основным. */}
           <AccordionContent>{list && !list.primary ? <p className="text-sm text-foreground" data-primary-empty>{w.primaryEmpty}</p> : ladder}</AccordionContent>
         </AccordionItem>
+
+        {/* 385-3: копия в Cloudflare по каждому адресу узла — своя карточка, как домен; есть только при основном домене. */}
+        {list?.primary ? <StaticCopyItem lang={lang} words={ladderWords.copy} /> : null}
 
         {list?.extra.map((d) => (
           <AccordionItem key={d.name} value={d.name} data-domain-card={d.name} data-domain-state={d.state}>
