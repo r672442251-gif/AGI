@@ -117,7 +117,7 @@ const DICT: Record<string, ArchitectLayerUi> = {
   groups: {
     passport: "Passport",
     tools: "Tools of this server",
-    build: "Core",
+    build: "Main agent",
   },
   home: {
     title: "The architect group of pages",
@@ -145,7 +145,7 @@ const DICT: Record<string, ArchitectLayerUi> = {
   groups: {
     passport: "Паспорт",
     tools: "Инструменты этого сервера",
-    build: "Ядро",
+    build: "Главный агент",
   },
   home: {
     title: "Группа страниц архитектора",
