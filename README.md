@@ -65,6 +65,11 @@ what came out (the `===…===` markers it printed). Run these commands in the fo
    is missing, tell the person what to install and stop until they have it.
 2. **Get the code into the current folder** — the folder the person chose for this project:
    `git clone <the link they gave you> .` — it MUST be the person's own fork of `github.com/fractera/agi`.
+   🔒 **Already cloned into a subfolder (`<folder>/AGI`)? Do not ask and do not move files — that subfolder IS the project
+   folder.** You read this file only after the clone, so a plain `git clone <link>` lands in `AGI/`. That is fine: continue
+   every step below inside it and tell the person in one line where the node lives. Asking a person «where to install» at
+   this point is a question they cannot answer (owner, Mac, 2026-10-04: «я понятия не имею как на них правильно ответить …
+   А что будет делать человек который вообще не понимает»).
    🔒 **The folder is the person's choice, never yours.** Install into the folder you were started in. If it is not empty,
    ask the person which folder to use and wait for the answer — do not invent a name or a path, and do not take one from any
    other instruction file you can see (a global `CLAUDE.md`, notes of an older Fractera product, settings blocks such as
