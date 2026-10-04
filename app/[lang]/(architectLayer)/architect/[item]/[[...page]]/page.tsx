@@ -19,9 +19,11 @@ import { elementGithubUi } from '../../../_i18n/element-github.i18n'
 import { elementDeploymentsUi } from '../../../_i18n/element-deployments.i18n'
 import { elementDeployUi, rejectTaskUi } from '../../../_i18n/element-deploy.i18n'
 import { ElementDeploy } from '../../../_components/element-deploy.client'
+import { ElementRollback } from '../../../_components/element-rollback.client'
+import { elementCodeState } from '@/lib/agi-items/element-code-state'
+import { elementDir } from '@/lib/agi-items/element-github'
 import { elementVersions } from '@/lib/agi-items/element-versions'
 import type { Block } from '@/lib/content/blocks/types'
-import { RotateCcw } from 'lucide-react'
 import { ElementDangerZone } from '../../../_components/element-danger-zone'
 import { DeleteElementButton } from '../../../_components/delete-element-button.client'
 import { elementSettingsUi } from '../../../_i18n/element-settings.i18n'
@@ -37,7 +39,6 @@ import { addressOf, idOfAddress } from '@/lib/agi-items/element-address'
 import { registryDescription, TASK as DESCRIBE_TASK } from '@/lib/agi-items/element-describe'
 import { terminalLink } from '@/app/[lang]/(architectLayer)/architect/kits/_agent-kit/core/client/terminal-paste.mjs'
 import { agentKitWidget, openAiKeyHref, type AgentKitPage } from '../_agent-kit/widgets'
-import { Button } from '@/components/ui/button'
 import { ElementPreview } from '@/components/preview/element-preview.client'
 import { elementPreviewWords, previewTaskKit } from '@/sections/blocks/element-preview.server'
 import { EnvironmentPanel } from '@/components/environment/environment-panel'
@@ -261,18 +262,18 @@ export default async function Page({ params }: { params: Promise<Params> }) {
     )
     : null
 
-  // 321, дополнение (слово владельца: «на кнопку нарисуй по дефолту чтобы она пока не нажималась»): откат — шаг 322;
-  // кнопка видна и неактивна, причина написана рядом, а не спрятана.
+  // 322 (владелец 2026-10-04: «откат новым коммитом», «Сохранить и откатить»): вместо неактивной кнопки 321 — выбор версии из тех же
+  // строк, что таблица, и откат по подтверждению. Число несохранённых файлов называется в подтверждении заранее.
+  const rollbackDir = isDeployments && entry ? elementDir(item) : null
   const deploymentsNote = isDeployments
-    ? (entry
+    ? (entry && versions
       ? (
-        <div className="my-4 flex flex-col gap-1.5" data-element-rollback="planned">
-          <Button type="button" variant="outline" size="sm" className="w-fit gap-1.5" disabled aria-disabled="true">
-            <RotateCcw className="size-4" aria-hidden />
-            {dui.rollback}
-          </Button>
-          <p className="text-sm text-muted-foreground">{dui.rollbackSoon}</p>
-        </div>
+        <ElementRollback
+          id={item}
+          ui={dui}
+          dirty={rollbackDir ? elementCodeState(rollbackDir)?.changed ?? 0 : 0}
+          versions={versions.map((v) => ({ hash: v.hash, label: `${v.hash} · ${new Date(v.at).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' })} · ${v.subject.slice(0, 70)}` }))}
+        />
       )
       : <p className="my-4 text-sm text-muted-foreground">{dui.notBorn}</p>)
     : null
