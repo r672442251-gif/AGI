@@ -68,11 +68,15 @@ export function OwnerBand({
   body,
   titleMachine,
   bodyMachine,
+  titleTemporary,
+  bodyTemporary,
 }: {
   title: string
   reasonMachine: string
   titleMachine: string
   bodyMachine: string
+  titleTemporary: string
+  bodyTemporary: string
   reasonTemporary: string
   reasonShowcase: string
   body: string
@@ -97,7 +101,7 @@ export function OwnerBand({
         <AccordionTrigger className="py-2 text-[length:var(--fs-small)] text-amber-900 hover:no-underline dark:text-amber-200">
           <span>
             <span aria-hidden="true">⚠ </span>
-            {machine ? titleMachine.replace('{host}', host) : title}
+            {machine ? titleMachine.replace('{host}', host) : mode === 'temporary' ? titleTemporary : title}
           </span>
         </AccordionTrigger>
         <AccordionContent className="pb-3 text-[length:var(--fs-small)] text-amber-900 dark:text-amber-200">
@@ -107,7 +111,7 @@ export function OwnerBand({
           {/* 🔒 ВЫВОД О МИКРОСЕРВИСЕ АВТОРИЗАЦИИ АДРЕСОВАН ХОЗЯИНУ УЗЛА, А НЕ
               ПРОХОЖЕМУ. На витрине его нет: человеку, пришедшему из поиска,
               незачем советовать, что активировать в чужом узле. */}
-          {mode !== 'showcase' && <p>{machine ? bodyMachine : body}</p>}
+          {mode !== 'showcase' && <p>{machine ? bodyMachine : mode === 'temporary' ? bodyTemporary : body}</p>}
         </AccordionContent>
       </AccordionItem>
     </Accordion>

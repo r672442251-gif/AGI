@@ -86,6 +86,9 @@ export type ArchitectLayerUi = {
     /** 387-3: заголовок и вывод для этого компьютера (`{host}` — адрес страницы). Владелец 2026-10-04: «слово состояние временное здесь вообще места». */
     titleMachine: string
     bodyMachine: string
+    /** 387-6: то же для временного адреса Cloudflare (владелец: «y» на «здесь он только для просмотра»). */
+    titleTemporary: string
+    bodyTemporary: string
     /** Почему открыто — версия для временного адреса в интернете. */
     reasonTemporary: string
     /**
@@ -128,6 +131,8 @@ const DICT: Record<string, ArchitectLayerUi> = {
     title: "This layer is open without any sign-in — a temporary state",
     reasonMachine: "You opened the control panel at {host} — on the very computer where your project runs. No sign-in is needed here: only someone sitting at this computer can get here.",
     titleMachine: "You are on this computer ({host}) — the control panel opens here without signing in",
+    titleTemporary: "You opened the control panel at a temporary Cloudflare address — here it is view-only",
+    bodyTemporary: "Saving settings, keys, the agent terminal and the Claude subscription work on this computer (localhost) or on your own domain. This address changes every time the tunnel restarts — connect your own domain on «Domain activation», and the control panel will open at a permanent address after signing in as the architect.",
     bodyMachine: "From the internet, on your own domain, the control panel opens only after signing in as the architect.",
     reasonTemporary: "You are inside without signing in because the node is on a temporary address. While that address is open, anyone who knows the link sees this layer.",
     reasonShowcase: "You are looking at the Fractera showcase: this node shows its own control surface to anyone, on purpose, so that the product can be seen before it is installed. Nothing here can be changed — the whole site is read-only, and every attempt to save is refused. Your own node, installed from this repository, keeps these pages closed.",
@@ -154,6 +159,8 @@ const DICT: Record<string, ArchitectLayerUi> = {
     title: "Этот слой открыт без авторизации — состояние временное",
     reasonMachine: "Вы открыли пульт по адресу {host} — на том самом компьютере, где работает ваш проект. Здесь вход не нужен: сюда попадает только тот, кто сидит за этим компьютером.",
     titleMachine: "Вы на этом компьютере ({host}) — здесь пульт открывается без входа",
+    titleTemporary: "Вы открыли пульт по временному адресу Cloudflare — здесь он только для просмотра",
+    bodyTemporary: "Сохранять настройки, ключи, работать в терминале агента и с подпиской Claude можно на этом компьютере (localhost) или на своём домене. Этот адрес меняется при каждом перезапуске туннеля — подключите свой домен на странице «Активация домена», и пульт будет открываться по постоянному адресу после входа архитектором.",
     bodyMachine: "Из интернета, по вашему собственному домену, пульт открывается только после входа архитектором.",
     reasonTemporary: "Вы внутри без входа, потому что узел стоит на временном адресе. Пока этот адрес открыт, слой видит каждый, кто знает ссылку.",
     reasonShowcase: "Вы смотрите витрину Fractera: этот узел намеренно показывает свой пульт управления всем, чтобы продукт можно было увидеть до установки. Изменить здесь нельзя ничего — весь сайт работает только на чтение, и любая попытка сохранить получает отказ. Ваш собственный узел, поставленный из этого репозитория, держит эти страницы закрытыми.",

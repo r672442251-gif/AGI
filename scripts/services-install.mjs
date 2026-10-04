@@ -111,21 +111,53 @@ const registry = JSON.parse(readFileSync(REGISTRY, 'utf8'))
 // репозиторием человека. 🔒 Снимок читается ТОЛЬКО на свежей машине — нет `data/services`: на живом узле реестр и есть правда,
 // а снимок мог отстать (удалённый с тех пор элемент воскрес бы). Свой домен и туннель снимок не возвращает (решение: отложено).
 const SNAPSHOT_FILE = join(ROOT, 'AGI-ITEMS-CONFIG', 'agi-items.node.json')
+// 387-5 (полный цикл Mac 2026-10-04: из форка со снимком без токена не встал НИ ОДИН элемент — «токена GitHub нет»; владелец
+// на предложение ответил «y»): без токена восстановление не ломает узел. Обязательный элемент (есть в реестре Fractera) ставится
+// с оригинала, как при чистой установке, — репозиторий человека к нему не привязывается. Свой элемент человека (есть только в
+// снимке) откладывается в `data/node/restore-pending.json` со строкой «восстановится, когда добавите токен GitHub»; следующая
+// установка с токеном (`npm run serve:start`) восстанавливает отложенные — снимок второй раз не читается, читается список.
+const PENDING_FILE = join(ROOT, 'data', 'node', 'restore-pending.json')
+const restoreToken = githubToken('')
 if (!existsSync(join(ROOT, 'data', 'services')) && existsSync(SNAPSHOT_FILE)) {
   let snap = null
   try { snap = JSON.parse(readFileSync(SNAPSHOT_FILE, 'utf8')) } catch { say('  снимок карты не прочитан — восстанавливать нечего') }
+  const pending = []
   for (const s of Array.isArray(snap?.services) ? snap.services : []) {
     if (!s || typeof s.id !== 'string') continue
     const e = registry.services.find((x) => x.id === s.id)
+    if (!restoreToken && !e) {
+      pending.push(s)
+      say(`  карта узла: «${s.id}»${s.github ? ` из ${s.github}` : ''} — восстановится, когда добавите токен GitHub (страница GitHub узла на этом компьютере), затем npm run serve:start`)
+      continue
+    }
     if (!e) registry.services.push({ ...s })
-    else if (s.github && !e.github) e.github = s.github
+    else if (s.github && !e.github && restoreToken) e.github = s.github
     if (typeof s.address === 'string' && s.address !== s.id) {
       const f = join(ROOT, 'data', 'services', s.id, 'address.json')
       mkdirSync(dirname(f), { recursive: true })
       writeFileSync(f, JSON.stringify({ address: s.address, at: new Date().toISOString(), restored: true }, null, 2) + '\n', 'utf8')
     }
-    say(`  карта узла: «${s.id}»${s.github ? ` — из ${s.github}` : ''}`)
+    say(`  карта узла: «${s.id}»${e && !restoreToken ? ' — с оригинала Fractera (токена GitHub нет)' : s.github ? ` — из ${s.github}` : ''}`)
   }
+  if (pending.length) {
+    mkdirSync(dirname(PENDING_FILE), { recursive: true })
+    writeFileSync(PENDING_FILE, JSON.stringify({ at: new Date().toISOString(), services: pending }, null, 2) + '\n', 'utf8')
+  }
+} else if (existsSync(PENDING_FILE) && restoreToken) {
+  // 387-5: токен появился — отложенные элементы снимка входят в реестр и восстанавливаются ниже обычным путём 374-5.
+  let pend = null
+  try { pend = JSON.parse(readFileSync(PENDING_FILE, 'utf8')) } catch { pend = null }
+  for (const s of Array.isArray(pend?.services) ? pend.services : []) {
+    if (!s || typeof s.id !== 'string' || registry.services.some((x) => x.id === s.id)) continue
+    registry.services.push({ ...s })
+    if (typeof s.address === 'string' && s.address !== s.id) {
+      const f = join(ROOT, 'data', 'services', s.id, 'address.json')
+      mkdirSync(dirname(f), { recursive: true })
+      writeFileSync(f, JSON.stringify({ address: s.address, at: new Date().toISOString(), restored: true }, null, 2) + '\n', 'utf8')
+    }
+    say(`  восстанавливаю отложенный «${s.id}»${s.github ? ` из ${s.github}` : ''}`)
+  }
+  rmSync(PENDING_FILE, { force: true })
 }
 
 /** Ключ GitHub для восстановления: свой элемента → общий узла (`data/node/github/.env`) → `FRACTERA_GITHUB_TOKEN`. */
