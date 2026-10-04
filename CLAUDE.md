@@ -370,6 +370,24 @@ this repository: each item is its own repository, cloned by `npm run services:in
 absolute paths (rerun `services:install`), pm2 keeps the old `cwd` (the installer does `delete + start`),
 and `tsconfig.exclude` — miss it and the build starts type-checking foreign repositories.
 
+### What connecting the main domain does, and what a fresh install does (steps 386–392, 2026-10-04)
+Proven by the owner's full cycle on a Mac (remove → reinstall from the fork → connect aifa.dev → sign in on a phone).
+- 🔒 **Connecting the main domain** (`app/api/domain/activate`) also: connects the subdomain of EVERY installed element
+  (`<address>.<zone>` + DNS, refused records named in `subdomains`, not failing) · KEEPS tunnel rules of other names (it used to
+  replace them all — element subdomains and own domains were wiped) · rebuilds every element whose `ARCHITECT_URL` /
+  `NEXT_PUBLIC_AUTH_URL` still name this computer (`lib/domain/stale-addresses.cjs` → `deploy-elements.mjs`; ✗ the site root,
+  installed before the domain, sent a phone to `localhost:24680` after sign-in) · copies every address (`--all`).
+- 🔒 **A fork carrying the old node's map** (`AGI-ITEMS-CONFIG/agi-items.node.json`) without a GitHub token installs the
+  required elements from the Fractera original; the person's own elements wait in `data/node/restore-pending.json` and come
+  back on the next install with a token (`scripts/services-install.mjs`). ✗ Before: no element installed at all.
+- 🔒 **On this computer** a 30 px bar above the header says whether the site is online through Cloudflare («Ask Cloudflare»,
+  `GET /api/node/online`: tunnel status by API + a live request of a never-copied address — 🛑 the API lags, the colour follows
+  the live request). The amber band names the place: localhost («you are on this computer») or the temporary address (view-only).
+- The «site owner is offline» page is per language (`/__offline-<lang>.html`; path → `?lang=` → browser → default).
+- The two red alarms (temporary address, GitHub) have «Don't show again» — this computer, 24 h, `localStorage`.
+- Sign-in speaks the site's `?lang=` before the browser's (auth v1.3.23).
+- The Telegram channel needs no domain: the plugin polls Telegram (outgoing only) — works on localhost alone.
+
 ---
 
 ## The site at the root of the domain is an element, not part of the core (step 280, 2026-09-23)
