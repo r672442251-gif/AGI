@@ -29,7 +29,7 @@
     {
       "id": "auth",
       "repo": "https://github.com/Fractera/fractera-auth-starter.git",
-      "version": "v1.3.22",
+      "version": "v1.3.23",
       "port": 24681,
       "provides": [
         "session",
