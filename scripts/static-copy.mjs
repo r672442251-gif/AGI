@@ -36,45 +36,75 @@ function fail(reason, detail = '') { say(`ОТКАЗ: ${reason} ${detail}`); sav
 // `--all` (шаг 385): копия каждому адресу узла — каждому элементу, на чей порт ведёт туннель (`architect.` ведёт на ядро, его в
 // реестре нет — он пропускается сам), плюс элементам со своим доменом. Элемент, у которого прошлая копия есть, а адреса больше нет, —
 // `--remove`. По одному, не параллельно: у машины человека может быть 400 МБ свободной памяти. Сводка — `logs/static-copy-all.log`.
+// 385-3, возврат владельца 2026-10-04 («хотелось бы чтобы выпали список доменов которые будут обновлены … понимание процесса
+// отсутствует»): проход ведёт файл работы `logs/static-copy-all.json` — план (каждый элемент: адреса и что с ним будет), текущий
+// элемент и его фаза, сколько готово, итог по каждому. Его читает табло на «Активации домена» (стандарт табло шага 380). Файл же —
+// замок: pid жив и `running` — второй проход не начинается (кнопка и подключение домена могут совпасть).
 if (id === '--all') {
   const { spawnSync } = await import('node:child_process')
+  const { addressOf } = await import('../lib/agi-items/address-file.mjs')
   const ALL_LOG = join(ROOT, 'logs', 'static-copy-all.log')
+  const JOB = join(ROOT, 'logs', 'static-copy-all.json')
   const note = (m) => { const l = `${new Date().toISOString()} ${m}`; console.log(l); try { appendFileSync(ALL_LOG, l + '\n') } catch { /* не главное */ } }
-  // 385-3: один проход за раз. Кнопка «Обновить копии» и подключение домена могут совпасть — второй проход выходит, а не выкладывает
-  // те же Worker параллельно. Замок с pid: процесс умер (пересборка, выключение) — замок не держит (тот же приём, что у 337).
-  const LOCK = join(ROOT, 'logs', 'static-copy-all.lock.json')
-  const held = readJson(LOCK)
-  if (held?.pid && held.pid !== process.pid) { try { process.kill(held.pid, 0); note(`проход уже идёт (pid ${held.pid}) — второй не начинается`); console.log('===COPY_ALL_BUSY==='); process.exit(0) } catch { /* умер — замок ничей */ } }
-  try { mkdirSync(join(ROOT, 'logs'), { recursive: true }); writeFileSync(LOCK, JSON.stringify({ pid: process.pid, at: new Date().toISOString() }) + '\n') } catch { /* без замка — как до 385-3 */ }
-  process.on('exit', () => { try { if (readJson(LOCK)?.pid === process.pid) writeFileSync(LOCK, '{}\n') } catch { /* не главное */ } })
+  const held = readJson(JOB)
+  if (held?.running && held.pid && held.pid !== process.pid) { try { process.kill(held.pid, 0); note(`проход уже идёт (pid ${held.pid}) — второй не начинается`); console.log('===COPY_ALL_BUSY==='); process.exit(0) } catch { /* умер — замок ничей */ } }
+  const job = { pid: process.pid, running: true, startedAt: new Date().toISOString(), plan: [], current: null, phase: null, done: 0, total: 0, results: [] }
+  const write = () => { try { mkdirSync(join(ROOT, 'logs'), { recursive: true }); writeFileSync(JOB, JSON.stringify(job, null, 2) + '\n') } catch { /* табло без хода — не повод останавливать выкладку */ } }
+  const finish = (code, error) => { job.running = false; job.current = null; job.phase = null; job.finishedAt = new Date().toISOString(); if (error) job.error = error; write(); process.exit(code) }
+  write()
   const tok = (() => { try { return readFileSync(join(ROOT, '.env.local'), 'utf8') } catch { return '' } })().match(/^CLOUDFLARE_API_TOKEN=(.*)$/m)?.[1]?.trim()
   const node = readJson(join(ROOT, 'logs', 'domain.json'))
-  let ports = new Set()
-  if (tok && node?.zone && node?.tunnelId) {
+  if (!tok) { note('ОТКАЗ: у узла нет ключа Cloudflare'); finish(1, 'no-key') }
+  if (!node?.zone || !node?.tunnelId) { note('ОТКАЗ: у узла нет своего домена'); finish(1, 'no-domain') }
+  // Порт → адреса туннеля, как есть (один порт — несколько имён: главный домен и www, поддомен).
+  const hostsByPort = new Map()
+  {
     const h = { Authorization: `Bearer ${tok}` }
     const zr = await (await fetch(`${API}/zones?name=${encodeURIComponent(node.zone)}`, { headers: h })).json().catch(() => ({}))
     const acc = zr.result?.[0]?.account?.id
-    const ing = acc ? await (await fetch(`${API}/accounts/${acc}/cfd_tunnel/${node.tunnelId}/configurations`, { headers: h })).json().catch(() => ({})) : {}
-    for (const r of ing.result?.config?.ingress ?? []) { try { if (r.hostname) ports.add(Number(new URL(r.service).port)) } catch { /* не адрес */ } }
+    if (!acc) { note('ОТКАЗ: зона узла не видна ключу'); finish(1, 'zone-not-visible') }
+    const ing = await (await fetch(`${API}/accounts/${acc}/cfd_tunnel/${node.tunnelId}/configurations`, { headers: h })).json().catch(() => ({}))
+    if (!ing.result?.config) { note('ОТКАЗ: туннель узла не виден ключу'); finish(1, 'tunnel-not-visible') }
+    for (const r of ing.result.config.ingress ?? []) {
+      try { if (r.hostname) { const p = Number(new URL(r.service).port); hostsByPort.set(p, [...(hostsByPort.get(p) ?? []), r.hostname]) } } catch { /* не адрес */ }
+    }
   }
-  const results = []
   for (const s of readJson(paths.REGISTRY_FILE)?.services ?? []) {
     const st = readJson(join(paths.entryDir(s), '.install-stamp.json'))
-    const own = existsSync(join(ROOT, 'data', 'services', s.id, 'domain.json'))
+    const own = readJson(join(ROOT, 'data', 'services', s.id, 'domain.json'))
     const prev = readJson(join(ROOT, 'data', 'services', s.id, 'static-copy.json'))
-    const has = own || (st?.port && ports.has(Number(st.port)))
-    if (!has && !(prev?.ok)) continue
-    const args = has ? [s.id] : [s.id, '--remove']
-    const r = spawnSync(process.execPath, [join(ROOT, 'scripts', 'static-copy.mjs'), ...args], { cwd: ROOT, encoding: 'utf8', windowsHide: true })
-    const after = readJson(join(ROOT, 'data', 'services', s.id, 'static-copy.json'))
-    const line = has ? (after?.ok ? `${s.id}: ${after.hosts?.join(', ') ?? after.host} — ${after.files} файлов` : `${s.id}: ОТКАЗ ${after?.reason ?? r.status} ${after?.detail ?? ''}`) : `${s.id}: адреса нет — копия снята`
-    note(line)
-    results.push({ id: s.id, ok: has ? !!after?.ok : true })
+    const hosts = own?.url ? [new URL(own.url).host] : (st?.port ? hostsByPort.get(Number(st.port)) ?? [] : [])
+    const action = hosts.length ? 'copy' : prev?.ok ? 'remove' : 'skip'
+    job.plan.push({ id: s.id, address: addressOf(s.id, ROOT) || s.id, hosts, action, removedHosts: action === 'remove' ? (prev.hosts ?? [prev.host]) : undefined })
   }
-  const bad = results.filter((x) => !x.ok).length
-  note(`итог: адресов ${results.length}, отказов ${bad}`)
+  job.total = job.plan.filter((p) => p.action !== 'skip').length
+  write()
+  for (const p of job.plan) {
+    if (p.action === 'skip') continue
+    job.current = p.id
+    job.phase = p.action === 'remove' ? 'remove' : 'start'
+    write()
+    const r = spawnSync(process.execPath, [join(ROOT, 'scripts', 'static-copy.mjs'), p.id, ...(p.action === 'remove' ? ['--remove'] : [])], { cwd: ROOT, encoding: 'utf8', windowsHide: true, env: { ...process.env, FRACTERA_COPY_JOB: JOB } })
+    Object.assign(job, { ...readJson(JOB), plan: job.plan, results: job.results, done: job.done, total: job.total })
+    const after = readJson(join(ROOT, 'data', 'services', p.id, 'static-copy.json'))
+    const ok = p.action === 'remove' ? true : !!after?.ok
+    job.results.push({ id: p.id, ok, removed: p.action === 'remove', files: after?.files ?? null, reason: ok ? null : after?.reason ?? String(r.status), detail: ok ? null : after?.detail ?? null })
+    job.done += 1
+    note(p.action === 'remove' ? `${p.id}: адреса нет — копия снята` : ok ? `${p.id}: ${p.hosts.join(', ')} — ${after.files} файлов` : `${p.id}: ОТКАЗ ${after?.reason ?? r.status} ${after?.detail ?? ''}`)
+    write()
+  }
+  const bad = job.results.filter((x) => !x.ok).length
+  note(`итог: адресов ${job.results.length}, отказов ${bad}, без адреса ${job.plan.filter((p) => p.action === 'skip').length}`)
   console.log(bad ? '===COPY_ALL_PARTIAL===' : '===COPY_ALL_OK===')
-  process.exit(bad ? 1 : 0)
+  finish(bad ? 1 : 0)
+}
+
+// Фаза одной выкладки для табло (385-3): пишется в файл работы прохода `--all`, если выкладка идёт внутри него. Родитель в это
+// время ждёт ребёнка (`spawnSync`), поэтому файл пишет только один процесс.
+const phase = (p) => {
+  const jf = process.env.FRACTERA_COPY_JOB
+  if (!jf) return
+  try { const j = readJson(jf); if (j) { j.phase = p; writeFileSync(jf, JSON.stringify(j, null, 2) + '\n') } } catch { /* табло без фазы */ }
 }
 
 const envText0 = (() => { try { return readFileSync(join(ROOT, '.env.local'), 'utf8') } catch { return '' } })()
@@ -151,6 +181,7 @@ if (!hosts.length) {
 }
 const host = hosts[0]
 
+phase('pages')
 // ── 1. Страницы: корень, главная и каждая страница публичной ветки на каждом языке сайта ─────────────────────────────────────
 const envLocal = (() => { try { return readFileSync(join(dir, '.env.local'), 'utf8') } catch { return '' } })()
 const langs = (envLocal.match(/^NEXT_PUBLIC_SUPPORTED_LANGUAGES=(.*)$/m)?.[1] ?? 'en').split(',').map((s) => s.trim()).filter(Boolean)
@@ -209,6 +240,7 @@ for (const f of ['/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/llms.
   if (r?.status === 200) files.set(f, Buffer.from(await r.arrayBuffer()))
 }
 
+phase('files')
 // ── 2. Файлы сборки и public ─────────────────────────────────────────────────────────────────────────────────────────────────
 function addTree(base, prefix) {
   if (!existsSync(base)) return
@@ -263,6 +295,7 @@ export default {
 }
 `
 
+phase('upload')
 // ── 5. Выкладка (Direct Upload) ─────────────────────────────────────────────────────────────────────────────────────────────
 const zone = await cf('GET', `/zones?name=${encodeURIComponent(host.split('.').slice(-2).join('.'))}`)
 const z = zone.result?.[0]
@@ -301,6 +334,7 @@ const pj = await put.json().catch(() => ({}))
 if (!put.ok || pj.success === false) fail('script', `${put.status} ${(pj.errors ?? []).map((e) => `${e.code} ${e.message}`).join('; ')}`)
 say(`Worker ${script} выложен`)
 
+phase('route')
 // ── 6. Маршрут `<хост>/*`, Fail open ────────────────────────────────────────────────────────────────────────────────────────
 // Адрес ушёл (смена главного адреса, поддомен ↔ домен) — маршрут прежнего хоста снимается: там копия больше не главная.
 const last = readJson(STATE)

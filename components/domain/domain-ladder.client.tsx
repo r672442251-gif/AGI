@@ -8,7 +8,6 @@ import { isTemporaryHostname } from "@/lib/auth/temporary-address"
 import type { DomainLadderWords } from "@/components/domain/domain-ladder.i18n"
 import { TokenHowTo } from "./token-how-to.client"
 import { keyReasonText } from "./key-reason"
-import { StaticCopyCard } from "./static-copy.client"
 
 // ЛЕСТНИЦА ПОДКЛЮЧЕНИЯ СВОЕГО ДОМЕНА (259-1).
 //
@@ -559,8 +558,6 @@ export function DomainLadder({ lang, words }: { lang: string; words: DomainLadde
         ) : null}
       </dl>
 
-      {/* 385-3: копия в Cloudflare по каждому адресу узла — только когда свой домен подключён. */}
-      {state.hostname ? <StaticCopyCard lang={lang} words={words.copy} /> : null}
     </div>
   )
 }

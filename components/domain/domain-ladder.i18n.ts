@@ -12,18 +12,30 @@
 export type StaticCopyWords = {
   title: string
   lead: string
+  badgeCopied: string
+  badgeRunning: string
   refresh: string
-  running: string
-  started: string
   check: string
-  empty: string
-  updated: string
-  files: string
+  started: string
+  progressTitle: string
+  elapsed: string
+  progressNote: string
+  phases: Record<string, string>
+  waiting: string
+  working: string
+  done: string
+  removed: string
   failed: string
+  noAddress: string
+  hostsUnknown: string
+  never: string
+  jobDone: string
+  interrupted: string
   noDomain: string
   temporary: string
   error: string
   noWorkers: string
+  reasons: Record<string, string>
 }
 
 export type DomainLadderWords = {
@@ -165,21 +177,48 @@ const W: Record<string, DomainLadderWords> = {
     liveAddress: "Your address in the internet",
     copy: {
       title: "Copy in Cloudflare",
-      lead: "Cloudflare keeps a copy of the public pages of every address, so the site stays visible while this computer is off. Sign-in and everything private answer only while the computer is on. The copy refreshes by itself after Accept, Deploy and connecting a domain.",
+      badgeCopied: "{ok} of {all} addresses copied",
+      badgeRunning: "refreshing {done}/{total}",
+      lead: "Cloudflare keeps a copy of the public pages of every address of this node, so the sites stay visible while this computer is off. Sign-in and everything private answer only while the computer is on. The copy refreshes by itself after Accept, Deploy and connecting a domain; here you refresh all of them at once.",
       refresh: "Refresh copies",
-      running: "Copies are being refreshed — this takes a few minutes. Check again later.",
-      started: "Started. Every address is copied one after another.",
       check: "Check",
-      empty: "No copies yet. Press Refresh copies.",
-      updated: "updated",
-      files: "files",
-      failed: "not copied",
+      started: "Starting…",
+      progressTitle: "Refreshed {done} of {total}",
+      elapsed: "elapsed",
+      progressNote: "Addresses are copied one after another, so a home computer with little free memory is not overloaded. You can leave the page — the work goes on.",
+      phases: {
+        start: "starting",
+        pages: "collecting pages",
+        files: "collecting files",
+        upload: "uploading to Cloudflare",
+        route: "pointing the address at the copy",
+        remove: "removing the old copy",
+      },
+      waiting: "waiting",
+      working: "copying now",
+      done: "copy from {time} · {files} files",
+      removed: "the address is gone — its copy is removed",
+      failed: "not copied: {reason}",
+      noAddress: "no address in the internet — nothing to copy. Connect one on the element's page: «Address in the internet».",
+      hostsUnknown: "addresses could not be read from Cloudflare",
+      never: "no copy yet",
+      jobDone: "Last run {at}: {ok} of {all} refreshed",
+      interrupted: "The last run was interrupted (the node restarted). Press Refresh copies again.",
       noDomain: "Copies appear after your own domain is connected.",
       temporary: "Copies can be refreshed only from this computer, not over the temporary address.",
       error: "The node did not answer.",
       noWorkers: "the node's Cloudflare key has no Workers rights — add them on the «Node key» card",
-    },
-    quickRetired: "The temporary address is still running and is no longer needed — stop it with npm run serve:unpublish",
+      reasons: {
+        "no-key": "the node has no Cloudflare key",
+        "no-domain": "the node has no own domain",
+        "zone-not-visible": "the key does not see the node's zone",
+        "tunnel-not-visible": "the key does not see the node's tunnel",
+        "not-installed": "the element is not built yet",
+        "no-pages": "the element's server gave no pages — is it running?",
+        "too-many-files": "too many files for one copy",
+        "route-taken": "the address is already served by another Worker",
+      },
+    },    quickRetired: "The temporary address is still running and is no longer needed — stop it with npm run serve:unpublish",
     loading: "Reading the node state…",
     soon: "Built in the next sub-step.",
     keyPlaceholder: "Paste the Cloudflare API token",
@@ -313,21 +352,48 @@ const W: Record<string, DomainLadderWords> = {
     liveAddress: "Ваш адрес в интернете",
     copy: {
       title: "Копия в Cloudflare",
-      lead: "Cloudflare хранит копию публичных страниц каждого адреса, поэтому сайт виден, даже когда этот компьютер выключен. Вход и всё закрытое отвечают, только пока компьютер включён. Копия обновляется сама после «Принять», «Развернуть» и подключения домена.",
+      badgeCopied: "копия у {ok} из {all} адресов",
+      badgeRunning: "обновляется {done}/{total}",
+      lead: "Cloudflare хранит копию публичных страниц каждого адреса этого узла, поэтому сайты видны, даже когда компьютер выключен. Вход и всё закрытое отвечают, только пока компьютер включён. Копия обновляется сама после «Принять», «Развернуть» и подключения домена; здесь — все сразу.",
       refresh: "Обновить копии",
-      running: "Копии обновляются — это займёт несколько минут. Проверьте позже.",
-      started: "Запущено. Адреса копируются по очереди.",
       check: "Проверить",
-      empty: "Копий пока нет. Нажмите «Обновить копии».",
-      updated: "обновлена",
-      files: "файлов",
-      failed: "не скопировано",
+      started: "Запускаю…",
+      progressTitle: "Обновлено {done} из {total}",
+      elapsed: "прошло",
+      progressNote: "Адреса копируются по очереди, чтобы не перегружать домашний компьютер с малой свободной памятью. Страницу можно закрыть — работа продолжится.",
+      phases: {
+        start: "начинаю",
+        pages: "собираю страницы",
+        files: "собираю файлы",
+        upload: "выкладываю в Cloudflare",
+        route: "направляю адрес на копию",
+        remove: "снимаю прежнюю копию",
+      },
+      waiting: "ждёт",
+      working: "копируется сейчас",
+      done: "копия от {time} · {files} файлов",
+      removed: "адреса больше нет — копия снята",
+      failed: "не скопировано: {reason}",
+      noAddress: "нет адреса в интернете — копировать нечего. Подключается на странице элемента: «Адрес в интернете».",
+      hostsUnknown: "адреса не удалось узнать у Cloudflare",
+      never: "копии ещё нет",
+      jobDone: "Последний проход {at}: обновлено {ok} из {all}",
+      interrupted: "Последний проход прерван (узел перезапускался). Нажмите «Обновить копии» ещё раз.",
       noDomain: "Копии появятся после подключения своего домена.",
       temporary: "Обновить копии можно только с этого компьютера, не через временный адрес.",
       error: "Узел не ответил.",
       noWorkers: "у ключа Cloudflare узла нет прав Workers — добавьте их на карточке «Ключ узла»",
-    },
-    quickRetired: "Временный адрес ещё работает и больше не нужен — остановить его: npm run serve:unpublish",
+      reasons: {
+        "no-key": "у узла нет ключа Cloudflare",
+        "no-domain": "у узла нет своего домена",
+        "zone-not-visible": "ключ не видит зону узла",
+        "tunnel-not-visible": "ключ не видит туннель узла",
+        "not-installed": "элемент ещё не собран",
+        "no-pages": "сервер элемента не отдал страниц — он запущен?",
+        "too-many-files": "слишком много файлов для одной копии",
+        "route-taken": "адрес уже обслуживает другой Worker",
+      },
+    },    quickRetired: "Временный адрес ещё работает и больше не нужен — остановить его: npm run serve:unpublish",
     loading: "Читаю состояние узла…",
     soon: "Строится в следующем подшаге.",
     keyPlaceholder: "Вставьте токен API Cloudflare",
