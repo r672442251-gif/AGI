@@ -134,6 +134,8 @@ export function ArchitectPage({
         reasonTemporary={ui.authWarning.reasonTemporary}
         reasonShowcase={ui.authWarning.reasonShowcase}
         body={ui.authWarning.body}
+        titleMachine={ui.authWarning.titleMachine}
+        bodyMachine={ui.authWarning.bodyMachine}
       />
 
       {/* 🔒 ШАПКА СТРАНИЦЫ — НАД РАБОЧИМ ЭКРАНОМ, СЛЕВА (решение владельца

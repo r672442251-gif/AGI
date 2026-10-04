@@ -66,9 +66,13 @@ export function OwnerBand({
   reasonTemporary,
   reasonShowcase,
   body,
+  titleMachine,
+  bodyMachine,
 }: {
   title: string
   reasonMachine: string
+  titleMachine: string
+  bodyMachine: string
   reasonTemporary: string
   reasonShowcase: string
   body: string
@@ -80,6 +84,9 @@ export function OwnerBand({
   useEffect(() => setMode(detectMode()), [])
 
   if (!mode) return null
+  // 387-3: на этом компьютере — свой заголовок и вывод с настоящим адресом страницы, без «состояние временное».
+  const host = typeof window === 'undefined' ? '' : window.location.host
+  const machine = mode === 'machine'
 
   return (
     <Accordion type="single" collapsible className="mb-4">
@@ -90,17 +97,17 @@ export function OwnerBand({
         <AccordionTrigger className="py-2 text-[length:var(--fs-small)] text-amber-900 hover:no-underline dark:text-amber-200">
           <span>
             <span aria-hidden="true">⚠ </span>
-            {title}
+            {machine ? titleMachine.replace('{host}', host) : title}
           </span>
         </AccordionTrigger>
         <AccordionContent className="pb-3 text-[length:var(--fs-small)] text-amber-900 dark:text-amber-200">
           <p className="mb-2">
-            {mode === 'machine' ? reasonMachine : mode === 'showcase' ? reasonShowcase : reasonTemporary}
+            {machine ? reasonMachine.replace('{host}', host) : mode === 'showcase' ? reasonShowcase : reasonTemporary}
           </p>
           {/* 🔒 ВЫВОД О МИКРОСЕРВИСЕ АВТОРИЗАЦИИ АДРЕСОВАН ХОЗЯИНУ УЗЛА, А НЕ
               ПРОХОЖЕМУ. На витрине его нет: человеку, пришедшему из поиска,
               незачем советовать, что активировать в чужом узле. */}
-          {mode !== 'showcase' && <p>{body}</p>}
+          {mode !== 'showcase' && <p>{machine ? bodyMachine : body}</p>}
         </AccordionContent>
       </AccordionItem>
     </Accordion>
