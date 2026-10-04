@@ -168,7 +168,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
   // подсветкой и «Найти блок». Черновик, ещё не родившийся, — только заголовок раздела: показывать нечего.
   const preview = section.slug === 'preview' && !page && serviceUrl(item)
     // Терминал рождённого элемента — под `build/` (как у «Описания» ниже); путь служб ядра вёл на ошибку (замерено 356-3).
-    ? <ElementPreview serviceId={item} terminalService={`${slug}/build`} lang={lang} words={elementPreviewWords(lang)} task={previewTaskKit(item, lang)} />
+    ? <ElementPreview serviceId={item} terminalService={`${slug}/build`} devHref={`/${lang}/${slug}/build/deployments`} lang={lang} words={elementPreviewWords(lang)} task={previewTaskKit(item, lang)} />
     : null
 
   // 326-3: «Подписка Claude Code», «Терминал», «Telegram бот» — острова ОБЩЕЙ копии комплекта агента (`../_agent-kit`, 326-1);

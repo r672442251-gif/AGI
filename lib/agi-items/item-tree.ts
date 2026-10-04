@@ -16,7 +16,7 @@ const w = (enTitle: string, enLead: string, ruTitle: string, ruLead: string): Re
 })
 
 export const ITEM_TREE: TreePage[] = [
-  { slug: "preview", words: w("Preview", "The element's own site as a visitor sees it.", "Preview", "Сайт элемента таким, каким его видит посетитель.") },
+  { slug: "preview", words: w("Live site", "The element's own site as it runs now and a visitor sees it.", "Живой сайт", "Сайт элемента таким, каким он работает сейчас и каким его видит посетитель.") }, // 393: «Preview» → «Живой сайт» (владелец 2026-10-04)
   {
     slug: "build",
     words: w("Build", "Everything the element's agent needs to build it.", "Строительство", "Всё, что нужно агенту элемента, чтобы его строить."),
