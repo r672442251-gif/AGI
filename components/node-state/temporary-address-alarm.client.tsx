@@ -5,6 +5,7 @@ import { ExternalLink, Siren } from "lucide-react"
 import type { TemporaryAddressAlarmWords } from "./temporary-address-alarm.i18n"
 import { isTemporaryHostname } from "@/lib/auth/temporary-address"
 import { OpenOnThisComputerButton } from "./open-on-this-computer.client"
+import { useSnooze } from "./snooze"
 
 // ТРЕВОЖНАЯ ПОЛОСА «ПРОЕКТ В ИНТЕРНЕТЕ ПО ВРЕМЕННОМУ АДРЕСУ» НАД СЛОЕМ АРХИТЕКТОРА (шаг 371-1).
 //
@@ -21,6 +22,8 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? ""
 
 export function TemporaryAddressAlarm({ words, lang }: { words: TemporaryAddressAlarmWords; lang: string }) {
   const [url, setUrl] = useState<string | null>(null)
+  // 391: «Больше не показывать» — на этом компьютере на сутки (localStorage); владелец 2026-10-04 снял «не сворачивается» 371-1.
+  const { hidden, snooze } = useSnooze("temporary-address-alarm")
 
   useEffect(() => {
     fetch(`${BASE}/api/domain/state`, { cache: "no-store" })
@@ -31,7 +34,7 @@ export function TemporaryAddressAlarm({ words, lang }: { words: TemporaryAddress
       .catch(() => setUrl(null))
   }, [])
 
-  if (!url) return null
+  if (!url || hidden) return null
   const onTemporary = isTemporaryHostname(window.location.hostname)
   return (
     <div
@@ -58,6 +61,9 @@ export function TemporaryAddressAlarm({ words, lang }: { words: TemporaryAddress
         <a href={`${BASE}/${lang}/hosting/domain`} className="font-medium underline">
           {words.connect}
         </a>
+        <button type="button" onClick={snooze} title={words.hideTitle} className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground" data-temporary-address-hide>
+          {words.hide}
+        </button>
       </div>
     </div>
   )

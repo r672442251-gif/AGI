@@ -256,12 +256,21 @@ addTree(join(dir, stamp.dist, 'static'), '/_next/static')
 addTree(join(dir, 'public'), '')
 
 // ── 3. Страница «не в сети» ─────────────────────────────────────────────────────────────────────────────────────────────────
-files.set('/__offline.html', Buffer.from(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+// 390 (владелец 2026-10-04, D3: «ты какой-то причине вводишь ответ сразу на двух языках … используя существующие стандарт
+// мультиязычности»): страница «не в сети» — своя на каждый язык (`/__offline-<язык>.html`), Worker выбирает язык посетителя.
+// Слова — основа `en` и перевод `ru` (стандарт узла AGI: два языка); язык сайта без перевода получает английскую.
+const OFFLINE_WORDS = {
+  en: { title: 'The site owner is offline right now', text: `Public pages of ${host} stay open; this part needs the owner's computer and will work again when it is back online.`, home: 'Home page' },
+  ru: { title: 'Хозяин сайта сейчас не в сети', text: `Публичные страницы ${host} открыты; этой части нужен компьютер хозяина, и она заработает, когда он снова будет в сети.`, home: 'Главная' },
+}
+const defaultLang = (envLocal.match(/^NEXT_PUBLIC_DEFAULT_LOCALE=(.*)$/m)?.[1] ?? langs[0] ?? 'en').trim()
+for (const lang of langs) {
+  const w = OFFLINE_WORDS[lang] ?? OFFLINE_WORDS.en
+  files.set(`/__offline-${lang}.html`, Buffer.from(`<!doctype html><html lang="${OFFLINE_WORDS[lang] ? lang : 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><title>${host}</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;background:#f6f6f7;color:#1b1b1f}
 main{max-width:34rem;padding:2rem}h1{font-size:1.4rem;margin:0 0 .6rem}p{line-height:1.55;margin:.4rem 0;color:#44444c}a{color:inherit}</style></head>
-<body><main><h1>The site owner is offline right now</h1><p>Public pages of ${host} stay open; this part needs the owner's computer and will work again when it is back online.</p>
-<p><a href="/">Home page</a></p><hr style="border:0;border-top:1px solid #ddd;margin:1.4rem 0"><h1 lang="ru">Хозяин сайта сейчас не в сети</h1>
-<p lang="ru">Публичные страницы ${host} открыты; этой части нужен компьютер хозяина, и она заработает, когда он снова будет в сети.</p><p lang="ru"><a href="/ru">Главная</a></p></main></body></html>`))
+<body><main><h1>${w.title}</h1><p>${w.text}</p><p><a href="/${lang}">${w.home}</a></p></main></body></html>`))
+}
 if (files.size > 20000) fail('too-many-files', String(files.size))
 say(`копия собрана: ${files.size} файлов (страниц: ${[...files.keys()].filter((k) => k.endsWith('.html')).length - 1})`)
 // `--dry` — собрать и показать, ничего не выкладывать (проверка без ключа с правами Workers).
@@ -275,6 +284,8 @@ if (process.argv.includes('--dry')) {
 
 // ── 4. Worker: спросить дом, если файла нет в копии; дом молчит — «не в сети» ────────────────────────────────────────────────
 const WORKER = `const REDIRECTS = ${JSON.stringify(redirects)}
+const LANGS = ${JSON.stringify(langs)}
+const DEFAULT_LANG = ${JSON.stringify(langs.includes(defaultLang) ? defaultLang : langs[0] ?? 'en')}
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
@@ -289,7 +300,11 @@ export default {
       const src = url.searchParams.get('url')
       if (src && src.startsWith('/')) { const a = await env.ASSETS.fetch(new URL(src, url)); if (a.ok) return a }
     }
-    const off = await env.ASSETS.fetch(new URL('/__offline.html', url))
+    // 390: язык посетителя — из адреса (/ru/...), из ?lang= (кнопка «Войти»), из браузера, иначе язык сайта по умолчанию.
+    const seg = url.pathname.split('/')[1]
+    const asked = (request.headers.get('accept-language') || '').split(',').map((x) => x.trim().slice(0, 2).toLowerCase())
+    const lang = [seg, url.searchParams.get('lang'), ...asked].find((x) => x && LANGS.includes(x)) || DEFAULT_LANG
+    const off = await env.ASSETS.fetch(new URL('/__offline-' + lang + '.html', url))
     return new Response(off.body, { status: 503, headers: { 'content-type': 'text/html; charset=utf-8', 'retry-after': '300', 'cache-control': 'no-store', 'x-fractera-copy': 'offline' } })
   },
 }

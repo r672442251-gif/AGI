@@ -1,6 +1,6 @@
 // СЛОВА ТРЕВОЖНОЙ ПОЛОСЫ «РАБОТА НЕ СОХРАНЯЕТСЯ В GITHUB» (шаг 374-9). `en` основа, `ru` перевод; выбирает сервер и передаёт
 // острову пропсом.
-export type GithubTokenAlarmWords = { lead: string; why: string; connect: string; leadSome: string; whySome: string; open: string }
+export type GithubTokenAlarmWords = { lead: string; why: string; connect: string; leadSome: string; whySome: string; open: string; hide: string; hideTitle: string }
 
 const DICT: Record<"en" | "ru", GithubTokenAlarmWords> = {
   en: {
@@ -10,6 +10,8 @@ const DICT: Record<"en" | "ru", GithubTokenAlarmWords> = {
     leadSome: "{n} AGI ITEM(S) are not saved to GitHub yet:",
     whySome: "Their work lives only on this computer. Give each a good name first if you want (the repository takes the item's name), then press «Create and upload» in its row.",
     open: "Open GitHub",
+    hide: "Don't show again",
+    hideTitle: "Hide on this computer for one day",
   },
   ru: {
     lead: "Ваши AGI ITEMS хранятся только на этом компьютере.",
@@ -18,6 +20,8 @@ const DICT: Record<"en" | "ru", GithubTokenAlarmWords> = {
     leadSome: "Не сохранены в GitHub ({n}):",
     whySome: "Их работа живёт только на этом компьютере. Если хотите, сначала дайте элементу хорошее имя (репозиторий получит имя элемента), затем нажмите «Создать и выгрузить» в его строке.",
     open: "Открыть GitHub",
+    hide: "Больше не показывать",
+    hideTitle: "Скрыть на этом компьютере на сутки",
   },
 }
 

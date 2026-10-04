@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { GitBranch } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import type { GithubTokenAlarmWords } from "./github-token-alarm.i18n"
+import { useSnooze } from "./snooze"
 
 // ТРЕВОЖНАЯ ПОЛОСА «РАБОТА НЕ СОХРАНЯЕТСЯ В GITHUB» НАД СЛОЕМ АРХИТЕКТОРА (шаг 374-9).
 //
@@ -27,6 +28,8 @@ export function announceGithubState() {
 
 export function GithubTokenAlarm({ words, lang }: { words: GithubTokenAlarmWords; lang: string }) {
   const [state, setState] = useState<{ token: boolean; missing: string[] } | null>(null)
+  // 391: «Больше не показывать» — на этом компьютере на сутки (localStorage).
+  const { hidden, snooze } = useSnooze("github-token-alarm")
 
   const pathname = usePathname()
   const load = useCallback(() => {
@@ -43,7 +46,7 @@ export function GithubTokenAlarm({ words, lang }: { words: GithubTokenAlarmWords
   }, [load])
 
   // 382: горит, пока нет ключа ИЛИ хотя бы один элемент не сохранён в GitHub.
-  if (!state || (state.token && state.missing.length === 0)) return null
+  if (!state || (state.token && state.missing.length === 0) || hidden) return null
   return (
     <div
       className="mx-4 mt-2 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-md border-2 border-destructive/60 bg-destructive/10 px-3 py-2 text-sm text-foreground"
@@ -56,9 +59,14 @@ export function GithubTokenAlarm({ words, lang }: { words: GithubTokenAlarmWords
         {state.token && <p className="font-mono text-sm" data-github-missing>{state.missing.join(", ")}</p>}
         <p>{state.token ? words.whySome : words.why}</p>
       </div>
-      <a href={`${BASE}/${lang}/build/github`} className={buttonVariants({ size: "sm", className: "self-center" })} data-github-token-connect>
-        {state.token ? words.open : words.connect}
-      </a>
+      <div className="flex flex-col items-start gap-2 self-center">
+        <a href={`${BASE}/${lang}/build/github`} className={buttonVariants({ size: "sm" })} data-github-token-connect>
+          {state.token ? words.open : words.connect}
+        </a>
+        <button type="button" onClick={snooze} title={words.hideTitle} className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground" data-github-token-hide>
+          {words.hide}
+        </button>
+      </div>
     </div>
   )
 }
