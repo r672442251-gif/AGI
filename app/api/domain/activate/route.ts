@@ -6,10 +6,11 @@ import { join } from "node:path"
 import { getSession } from "@/lib/auth/get-session"
 import { isTemporaryPublicAddress } from "@/lib/auth/temporary-address"
 import {
-  accountOfZone, createTunnel, deleteAddressRecords, findTunnel, listAddressRecords, listZones, setIngress, tunnelToken, upsertTunnelRecord,
+  accountOfZone, createTunnel, deleteAddressRecords, findTunnel, getIngress, listAddressRecords, listZones, setIngress, tunnelToken, upsertTunnelRecord,
   type IngressRule,
 } from "@/lib/domain/cloudflare"
-import { serviceUrl } from "@/lib/microservices/registry"
+import { listServices, serviceUrl } from "@/lib/microservices/registry"
+import { addressOf } from "@/lib/agi-items/address-file.mjs"
 import { startDomainResident } from "@/lib/domain/resident"
 import { applyDomainToAuth } from "@/lib/domain/auth-env"
 import { startStaticCopyAll } from "@/lib/agi-items/static-copy-start.cjs"
@@ -158,6 +159,25 @@ export async function POST(req: NextRequest) {
   if (architectHostname) rules.push({ hostname: architectHostname, service })
   if (authHostname && authService) rules.push({ hostname: authHostname, service: authService })
 
+  // 389 (владелец 2026-10-04: «почему два домена были автоматически добавлены остальные я должен добавлять вручную? Если мы можем
+  // решить давай ты решим»): основной домен заводит и поддомены ВСЕХ установленных элементов — `<адрес>.<зона>` → порт элемента,
+  // как кнопка «Адрес в интернете» на странице элемента (`/api/node/reach`). Элемент со своим доменом (`domain.json`) — тоже:
+  // поддомен ему служит переадресацией на свой домен (324). root и auth уже стоят выше.
+  const elementHosts: Array<{ id: string; hostname: string }> = []
+  for (const s of listServices()) {
+    if (s.id === "root" || s.id === "auth") continue
+    const local = serviceUrl(s.id)
+    if (!local) continue
+    const h = `${addressOf(s.id) || s.id}.${zone.name}`
+    if (rules.some((r) => r.hostname === h)) continue
+    rules.push({ hostname: h, service: local })
+    elementHosts.push({ id: s.id, hostname: h })
+  }
+  // 389: ✗ прежде правила туннеля ЗАМЕНЯЛИСЬ целиком — повторное подключение стирало поддомены элементов и свои домены
+  // элементов (поэтому на Windows его не повторяли). Правила с другими именами, которые уже есть в туннеле, сохраняются.
+  const existing = known.result ? await getIngress(key, account.result, tunnel.result) : null
+  if (existing?.ok) for (const r of existing.result) if (!rules.some((x) => x.hostname === r.hostname)) rules.push(r)
+
   const ingress = await setIngress(key, account.result, tunnel.result, rules)
   if (!ingress.ok) return fail(ingress.reason)
 
@@ -172,6 +192,14 @@ export async function POST(req: NextRequest) {
   if (authHostname) {
     const authRecord = await upsertTunnelRecord(key, zone.id, authHostname, tunnel.result)
     if (!authRecord.ok) return fail(`auth-${authRecord.reason}`)
+  }
+
+  // 389: записи DNS поддоменов элементов. Отказ одной записи не роняет подключение домена — он называется в ответе (`subdomains`),
+  // а элемент подключается потом своей кнопкой «Адрес в интернете».
+  const subdomains: Array<{ id: string; hostname: string; ok: boolean; reason?: string }> = []
+  for (const e of elementHosts) {
+    const rec = await upsertTunnelRecord(key, zone.id, e.hostname, tunnel.result)
+    subdomains.push({ ...e, ok: rec.ok, ...(rec.ok ? {} : { reason: rec.reason }) })
   }
 
   putEnv(RUN_TOKEN, runToken.result)
@@ -247,6 +275,6 @@ export async function POST(req: NextRequest) {
   revalidatePath("/[lang]", "layout")
 
   return NextResponse.json({
-    ok: true, hostname, zone: zone.name, tunnel: name, siteUrlWritten, authHostname, architectHostname, auth, resident, rebuilding, rebuildPostponed, stale,
+    ok: true, hostname, zone: zone.name, tunnel: name, siteUrlWritten, authHostname, architectHostname, auth, resident, rebuilding, rebuildPostponed, stale, subdomains,
   })
 }
