@@ -1,6 +1,6 @@
 "use client"
 
-import { Check, CircleAlert, Clock, LoaderCircle, Minus, RefreshCw } from "lucide-react"
+import { Check, CircleAlert, Clock, ExternalLink, LoaderCircle, Minus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
@@ -225,13 +225,18 @@ export function StaticCopyItem({ lang, words: w }: { lang: string; words: Static
             return (
               <li key={r.id} className="flex items-start gap-2 px-3 py-2 text-sm" data-static-copy-row={r.id} data-static-copy-state={state}>
                 {icon}
-                <span className="flex min-w-0 flex-col">
+                <span className="flex min-w-0 flex-1 flex-col">
                   <span className="font-medium text-foreground">
                     {r.address}
                     {hosts && hosts.length ? <span className="ml-2 break-all font-mono font-normal text-muted-foreground text-xs">{hosts.join(", ")}</span> : null}
                   </span>
                   <span className={`text-xs ${tone}`}>{text}</span>
                 </span>
+                {/* 389: страница элемента — там «Адрес в интернете» подключает поддомен вручную. */}
+                <a href={`${BASE}/${lang}/${r.address}`} className="inline-flex shrink-0 items-center gap-1 self-center text-xs text-primary underline-offset-2 hover:underline" data-static-copy-open={r.id}>
+                  {w.open}
+                  <ExternalLink className="size-3" aria-hidden />
+                </a>
               </li>
             )
           })}

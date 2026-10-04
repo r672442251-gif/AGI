@@ -1,5 +1,5 @@
 import {
-  AppWindow, Blocks, Box, Clock, Database, LayoutDashboard, FlaskConical, Hammer, House, IdCard, KeyRound, LayoutTemplate, Package, Palette,
+  AppWindow, Blocks, Bot, Box, Clock, Database, LayoutDashboard, FlaskConical, Hammer, House, IdCard, KeyRound, LayoutTemplate, Package, Palette,
   Plus, Server, Settings, SlidersHorizontal, Store, ToggleRight, Wrench,
 } from 'lucide-react'
 
@@ -33,6 +33,8 @@ const ICONS = {
   plus: Plus,
   // 339-1: группа «Dashboard» после «Паспорта».
   dashboard: LayoutDashboard,
+  // 388 (владелец 2026-10-04: «кнопку ядро заменим на главный агент и поставим аватарку робота»).
+  bot: Bot,
 } as const
 
 export type MenuIconName = keyof typeof ICONS

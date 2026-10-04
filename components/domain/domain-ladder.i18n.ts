@@ -13,6 +13,8 @@ export type StaticCopyWords = {
   title: string
   lead: string
   badgeCopied: string
+  /** 389: ссылка на страницу элемента в строке (владелец: «добавь вторую колонку которая пусть называется открыть»). */
+  open: string
   badgeRunning: string
   refresh: string
   check: string
@@ -178,6 +180,7 @@ const W: Record<string, DomainLadderWords> = {
     copy: {
       title: "Copy in Cloudflare",
       badgeCopied: "{ok} of {all} addresses copied",
+      open: "Open",
       badgeRunning: "refreshing {done}/{total}",
       lead: "Cloudflare keeps a copy of the public pages of every address of this node, so the sites stay visible while this computer is off. Sign-in and everything private answer only while the computer is on. The copy refreshes by itself after Accept, Deploy and connecting a domain; here you refresh all of them at once.",
       refresh: "Refresh copies",
@@ -353,6 +356,7 @@ const W: Record<string, DomainLadderWords> = {
     copy: {
       title: "Копия в Cloudflare",
       badgeCopied: "копия у {ok} из {all} адресов",
+      open: "Открыть",
       badgeRunning: "обновляется {done}/{total}",
       lead: "Cloudflare хранит копию публичных страниц каждого адреса этого узла, поэтому сайты видны, даже когда компьютер выключен. Вход и всё закрытое отвечают, только пока компьютер включён. Копия обновляется сама после «Принять», «Развернуть» и подключения домена; здесь — все сразу.",
       refresh: "Обновить копии",
