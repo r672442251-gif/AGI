@@ -13,6 +13,9 @@ import { serviceUrl } from "@/lib/microservices/registry"
 import { startDomainResident } from "@/lib/domain/resident"
 import { applyDomainToAuth } from "@/lib/domain/auth-env"
 import { startStaticCopyAll } from "@/lib/agi-items/static-copy-start.cjs"
+import { spawnSync } from "node:child_process"
+import { staleElements } from "@/lib/domain/stale-addresses.cjs"
+import deployLock from "@/lib/deploy/deploy-lock.cjs"
 
 // ДВЕРЬ АКТИВАЦИИ ДОМЕНА (259-3).
 //
@@ -226,10 +229,24 @@ export async function POST(req: NextRequest) {
   // 385-3: главный домен подключён — копия в Cloudflare каждому адресу узла (корень → root, поддомены элементов). Владелец
   // 2026-10-03: «Да, главный домен тоже». Выкладка вне дерева ядра, итог — строки на этой же странице.
   startStaticCopyAll(ROOT)
+  // 387-2 (владелец 2026-10-04: «да, исправляй»): элементы, установленные ДО домена, помнят адреса компьютера (`ARCHITECT_URL`,
+  // `NEXT_PUBLIC_AUTH_URL` — пишет только установщик), и вход с телефона вёл на `localhost:24680`. Узел сам пересобирает их тем же
+  // путём, что «Развернуть» (`scripts/deploy-elements.mjs`, вне дерева ядра): сборка идёт рядом, сайт без простоя. Идёт другое
+  // развёртывание — не перебиваем, называем в ответе.
+  const stale = staleElements(ROOT).map((x: { id: string }) => x.id)
+  let rebuilding: string[] = []
+  let rebuildPostponed = false
+  if (stale.length) {
+    if (deployLock.isRunning()) rebuildPostponed = true
+    else {
+      spawnSync(process.execPath, [join(ROOT, "scripts", "spawn-free.mjs"), join(ROOT, "scripts", "deploy-elements.mjs"), ...stale], { cwd: ROOT, windowsHide: true, stdio: "ignore", timeout: 10_000 })
+      rebuilding = stale
+    }
+  }
   // 324-1: страница «Активация домена» скрывает тексты «как получить домен», когда он подключён — перерисовать слой.
   revalidatePath("/[lang]", "layout")
 
   return NextResponse.json({
-    ok: true, hostname, zone: zone.name, tunnel: name, siteUrlWritten, authHostname, architectHostname, auth, resident,
+    ok: true, hostname, zone: zone.name, tunnel: name, siteUrlWritten, authHostname, architectHostname, auth, resident, rebuilding, rebuildPostponed, stale,
   })
 }
