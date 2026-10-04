@@ -51,8 +51,8 @@ export type ElementPreviewWords = {
   openNew: string
   /** 393: два режима «Открыть в новой вкладке». */
   openDev: string
+  openDevHint: string
   openProd: string
-  openProdNone: string
   /** 372-4: на временном адресе — та же страница пульта на этом компьютере, где просмотр работает. */
   openHere: string
   reload: string
@@ -109,7 +109,7 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? ""
 
 /** `terminalService` — сегмент страницы терминала в `/architect/<…>/terminal`: у служб ядра это их id (по умолчанию), у рождённого
  *  элемента — `<адрес>/build` (356: по id элемента ссылка вела на страницу ошибки). */
-export function ElementPreview({ serviceId, terminalService, lang, words, task }: { serviceId: string; terminalService?: string; lang: string; words: ElementPreviewWords; task?: PreviewTaskKit }) {
+export function ElementPreview({ serviceId, terminalService, lang, words, task, devHref }: { serviceId: string; terminalService?: string; lang: string; words: ElementPreviewWords; task?: PreviewTaskKit; /** 393: вкладка «Развёртывания» — превью режима разработки. */ devHref: string }) {
   const [state, setState] = useState<{ url: string; publicUrl?: string | null } | "loading" | "failed">("loading")
   // Адрес, открытый в просмотре СЕЙЧАС (человек мог перейти внутри): его и открывает кнопка «в новой вкладке».
   const [current, setCurrent] = useState<string | null>(null)
@@ -315,7 +315,9 @@ export function ElementPreview({ serviceId, terminalService, lang, words, task }
               сразу в работу на суб домен или домен если это про root». Ссылка, а не кнопка со скриптом: открывается и
               без JavaScript. */}
           {/* 393 (владелец 2026-10-04: «при нажатии на эту кнопку … два режима: превью режим разработки и привью продакшен»):
-              режим разработки — эта же страница на этом компьютере; продакшн — тот же путь по адресу элемента в интернете. */}
+              ПОПРАВКА владельца того же дня: «режим разработки это … вкладка развёртывания … запускает специальный сервер … отправлять
+              должен на ту самую вкладку». Разработка — «Развёртывания» (Предпросмотр того, что сделал агент); продакшн — работающая
+              версия: адрес элемента в интернете, без своего домена — та же сборка на этом компьютере. */}
           <Popover>
             <PopoverTrigger asChild>
               <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label={words.openNew} title={compact ? words.openNew : undefined} data-preview-open>
@@ -324,18 +326,14 @@ export function ElementPreview({ serviceId, terminalService, lang, words, task }
               </Button>
             </PopoverTrigger>
             <PopoverContent align="start" className="flex w-72 flex-col gap-1 p-2" data-preview-open-menu>
-              <a href={page} target="_blank" rel="noopener noreferrer" className="rounded-md px-2 py-1.5 text-sm hover:bg-muted" data-preview-open-dev>
+              <a href={`${BASE}${devHref}`} className="rounded-md px-2 py-1.5 text-sm hover:bg-muted" data-preview-open-dev>
                 {words.openDev}
-                <span className="block break-all font-mono text-xs text-muted-foreground">{new URL(page).host}</span>
+                <span className="block text-xs text-muted-foreground">{words.openDevHint}</span>
               </a>
-              {publicPage ? (
-                <a href={publicPage} target="_blank" rel="noopener noreferrer" className="rounded-md px-2 py-1.5 text-sm hover:bg-muted" data-preview-open-prod>
-                  {words.openProd}
-                  <span className="block break-all font-mono text-xs text-muted-foreground">{new URL(publicPage).host}</span>
-                </a>
-              ) : (
-                <p className="px-2 py-1.5 text-sm text-muted-foreground" data-preview-open-prod-none>{words.openProdNone}</p>
-              )}
+              <a href={publicPage ?? page} target="_blank" rel="noopener noreferrer" className="rounded-md px-2 py-1.5 text-sm hover:bg-muted" data-preview-open-prod>
+                {words.openProd}
+                <span className="block break-all font-mono text-xs text-muted-foreground">{new URL(publicPage ?? page).host}</span>
+              </a>
             </PopoverContent>
           </Popover>
           <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={redraw} disabled={reload === "busy"} aria-label={words.reload} title={compact ? words.reload : undefined} data-preview-reload>

@@ -12,9 +12,9 @@ const WORDS: Record<string, ElementPreviewWords> = {
     unavailable: 'The node did not answer, so the preview is not shown.',
     blockedHttps: 'Preview works only in the panel opened on this computer: it shows the element as it runs here right now, at this computer’s own address, and a browser does not let a page opened over the internet load such an address. Open the panel on this computer.',
     openNew: 'Open in a new tab',
-    openDev: 'Development — this computer',
-    openProd: 'Production — on the internet',
-    openProdNone: 'Production appears once your own domain is connected',
+    openDev: 'Development preview',
+    openDevHint: 'Deployments → Preview: build what the agent made and accept or reject it',
+    openProd: 'Production preview',
     openHere: 'Open on this computer',
     reload: 'Reload',
     reloading: 'Asking the element to redraw its pages…',
@@ -44,9 +44,9 @@ const WORDS: Record<string, ElementPreviewWords> = {
     unavailable: 'Узел не ответил, поэтому просмотр не показан.',
     blockedHttps: 'Preview работает только в пульте, открытом на этом компьютере: он показывает элемент таким, каким тот работает здесь прямо сейчас, по адресу этого компьютера, а браузер не даёт странице, открытой через интернет, загрузить такой адрес. Откройте пульт на этом компьютере.',
     openNew: 'Открыть в новой вкладке',
-    openDev: 'Режим разработки — этот компьютер',
-    openProd: 'Продакшн — в интернете',
-    openProdNone: 'Продакшн появится после подключения своего домена',
+    openDev: 'Превью режима разработки',
+    openDevHint: 'Развёртывания → Предпросмотр: собрать то, что сделал агент, и принять или отклонить',
+    openProd: 'Превью продакшн',
     openHere: 'Открыть на этом компьютере',
     reload: 'Обновить',
     reloading: 'Прошу элемент перерисовать страницы…',
@@ -85,5 +85,5 @@ export const previewTaskKit = (serviceId: string, lang: string): PreviewTaskKit 
 })
 
 export const elementPreview: SectionRenderer<'elementPreview'> = (b, { key: k }) => (
-  <ElementPreview key={k} serviceId={b.serviceId} lang={b.lang} words={elementPreviewWords(b.lang)} task={previewTaskKit(b.serviceId, b.lang)} />
+  <ElementPreview key={k} serviceId={b.serviceId} lang={b.lang} devHref={`/${b.lang}/build/deployments`} words={elementPreviewWords(b.lang)} task={previewTaskKit(b.serviceId, b.lang)} />
 )
