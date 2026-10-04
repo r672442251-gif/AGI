@@ -136,6 +136,8 @@ export function ArchitectPage({
         body={ui.authWarning.body}
         titleMachine={ui.authWarning.titleMachine}
         bodyMachine={ui.authWarning.bodyMachine}
+        titleTemporary={ui.authWarning.titleTemporary}
+        bodyTemporary={ui.authWarning.bodyTemporary}
       />
 
       {/* 🔒 ШАПКА СТРАНИЦЫ — НАД РАБОЧИМ ЭКРАНОМ, СЛЕВА (решение владельца
