@@ -8,6 +8,8 @@ import { originNoticeWords } from "@/components/node-state/origin-notice.i18n"
 import { TemporaryAddressAlarm } from "@/components/node-state/temporary-address-alarm.client"
 import { temporaryAddressAlarmWords } from "@/components/node-state/temporary-address-alarm.i18n"
 import { LocalTabMark } from "@/components/node-state/local-tab-mark.client"
+import { OnlineBar } from "@/components/node-state/online-bar.client"
+import { onlineBarWords } from "@/components/node-state/online-bar.i18n"
 import { GithubTokenAlarm } from "@/components/node-state/github-token-alarm.client"
 import { githubTokenAlarmWords } from "@/components/node-state/github-token-alarm.i18n"
 
@@ -60,6 +62,8 @@ export default async function Layout(
       {/* 372: на этом компьютере вкладка — зелёный значок и «Этот компьютер ·» (373; было «Dev mode ·»). */}
       {/* 374-9: ключа GitHub нет — работа живёт только на этом компьютере; тревога и кнопка к ключу (слово владельца 2026-10-02). */}
       <LocalTabMark />
+      {/* 386-2: на этом компьютере — полоса «в сети / не в сети» над шапкой и «Спросить у Cloudflare» (владелец 2026-10-04). */}
+      <OnlineBar words={onlineBarWords(lang)} lang={lang} />
       <TemporaryAddressAlarm words={temporaryAddressAlarmWords(lang)} lang={lang} />
       <OriginNotice words={originNoticeWords(lang)} />
       <GithubTokenAlarm words={githubTokenAlarmWords(lang)} lang={lang} />
