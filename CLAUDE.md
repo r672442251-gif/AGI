@@ -759,7 +759,12 @@ A born element is not deleted as a draft (409). Not built yet: birth in seconds.
   Without `domain.json` the main address is the element's subdomain (template v0.3.63, step 394), never the root's `url`.
   **`npm run check:addresses [id…]`** (step 395) checks every `user` site over the internet: robots Host/Sitemap, each
   sitemap `<loc>`, home canonical/hreflang on the main address; the other addresses answer 301/308 to it; exit 1 on any
-  violation. Command only — no timer, no button. Negative control: `--expect <id>=<wrong url>`. After every click the core redraws the element by loopback (`redrawElement`). «Disconnect» (DELETE) reverses it.
+  violation; an address missing from DNS is «not on the internet», not a violation. Command only — no timer, no button.
+  Negative control: `--expect <id>=<wrong url>`. 🛑 Run it after the Workers copy is out, not right after `deploy-elements`:
+  the copy uploads in the background (measured on the Mac 2026-10-05: deploy done 06:51:46, copy 06:52:03) and the first run
+  reads the old copy — see `logs/static-copy-<id>.log` «Worker … выложен». The root site (root-starter v1.7.34, step 396)
+  takes the node's domain the same way; the seed `APP-CONFIG` of both templates carries an empty `url`.
+  After every click the core redraws the element by loopback (`redrawElement`). «Disconnect» (DELETE) reverses it.
   🛑 Files with a dot in the path on the secondary name are not redirected (proxy matcher) — pages are.
 - **Links: CONFIG · Design · Blocks** (324-7, `lib/agi-items/element-links.ts`, `/api/architect/items/<id>/links`):
   `data/services/<id>/links.json`; the element reads it (`linkOn`). CONFIG off — the last project-settings copy is adopted
