@@ -1326,7 +1326,11 @@ language.
   ✗ Paid for 2026-09-19: the guard pointed at `TRANSLATION-DEBT.md` as the home of the debts, and the
   file did not exist in this repository at all — the practice was named nowhere, so nobody could follow
   it.
-- 🔒 **THE DEBT LINE IS NOW ENFORCED, NOT REQUESTED (256-10).** `check-content` fails the build when a
+- 🪦 **«FAILS THE BUILD» CANCELLED BY THE OWNER 2026-10-05 (step 397: «y , for root and for all»).** An unregistered
+  folder is now a build **warning**; only `npm run check:content -- --strict` refuses. ✗ Enabling a language in the panel
+  on a site of N pages gave N refusals and the element could not be rebuilt for any reason — root stood so for 4 days
+  (fr since 2026-10-01). The guard still names every untranslated folder on every build. The text below is history.
+- **THE DEBT LINE WAS ENFORCED, NOT REQUESTED (256-10).** `check-content` failed the build when a
   `_data` folder has no cell for an enabled language **and is not named in `TRANSLATION-DEBT.md`**.
   Note the asymmetry, it is deliberate: the *missing translation* is only a warning (unwritten prose
   must not black out a working site), while the *missing record* is a refusal — a debt nobody wrote
