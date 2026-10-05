@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { H3, Small } from "@/components/ui/typography"
 import { Spinner } from "@/components/ui/spinner"
 import type { GithubWords } from "../words/github.i18n"
+import { announceGithubState } from "@/components/node-state/github-token-alarm.client"
 
 // ПРИВЯЗКА УЗЛА К РЕПОЗИТОРИЮ И ЕГО КЛЮЧ (273).
 //
@@ -112,6 +113,10 @@ export function GithubBinding({ lang, words, connect }: { lang: string; words: G
         setError(words.errors.network)
       } finally {
         setBusy(null)
+        // 400 (владелец 2026-10-05: «нажимаю кнопку проверить доступ и как будто бы ничего не случается … чтобы эти надписи
+        // исчезали сразу а не после перезагрузки страницы»): токен сохранён, проверен или забыт — полоса над слоем и строки
+        // элементов ниже спрашивают дверь заново. Только в ответ на нажатие.
+        announceGithubState()
       }
     },
     [api, load, words.errors],

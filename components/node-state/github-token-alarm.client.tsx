@@ -19,7 +19,7 @@ import { useSnooze } from "./snooze"
 // по событию `fractera:github-state` — его шлют конец рождения и конец создания/выгрузки. Только в ответ на действие человека.
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? ""
-const GITHUB_STATE_EVENT = "fractera:github-state"
+export const GITHUB_STATE_EVENT = "fractera:github-state"
 
 /** Сказать полосе: состав элементов или их репозитории изменились — спросить дверь заново. */
 export function announceGithubState() {

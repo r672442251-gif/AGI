@@ -7,7 +7,7 @@ import { H3 } from "@/components/ui/typography"
 import type { ElementReposWords } from "../words/element-repos.i18n"
 import { RateCountdown, RowCountdown } from "./rate-countdown.client"
 import { terminalLink } from "@/app/[lang]/(architectLayer)/architect/kits/_agent-kit/core/client/terminal-paste.mjs"
-import { announceGithubState } from "@/components/node-state/github-token-alarm.client"
+import { announceGithubState, GITHUB_STATE_EVENT } from "@/components/node-state/github-token-alarm.client"
 
 // РЕПОЗИТОРИИ ВСЕХ AGI ITEMS НА СТРАНИЦЕ «СТРОИТЕЛЬСТВО → GITHUB» (шаг 374-2, 374-3).
 //
@@ -51,6 +51,12 @@ export function ElementRepos({ words: w, lang }: { words: ElementReposWords; lan
   }, [])
 
   useEffect(() => { void load() }, [load])
+  // 400: токен сохранён или проверен на карточке выше — строка «Токена GitHub пока нет» уходит сразу, без перезагрузки.
+  useEffect(() => {
+    const again = () => void load()
+    window.addEventListener(GITHUB_STATE_EVENT, again)
+    return () => window.removeEventListener(GITHUB_STATE_EVENT, again)
+  }, [load])
 
   // 380 (владелец 2026-10-02: «вижу абсолютную мёртвую картину … где индикатор где что?»): ПОКА ИДЁТ работа — страница сама
   // спрашивает ту же дверь каждые 2,5 с и показывает ход; работа кончилась — вопросы прекращаются. Узел от этого не делает ничего
