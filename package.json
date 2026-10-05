@@ -19,6 +19,7 @@
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:static": "node scripts/check-static.mjs",
     "check:seo": "node scripts/check-seo.mjs",
+    "check:addresses": "node scripts/check-addresses.mjs",
     "check:aio": "node scripts/check-aio.mjs",
     "check:pwa": "node scripts/check-pwa.mjs",
     "icons:default": "node scripts/generate-default-icons.mjs",
