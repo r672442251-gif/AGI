@@ -18,7 +18,7 @@ import { isIpHost, apexFrom } from "./site-urls";
 
 // Public base URL of the Auth service as the BROWSER must reach it.
 export function authBase(): string {
-  // 🔒 СЕРВЕРНАЯ ВЕТКА КЛИЕНТСКОГО МОДУЛЯ (257-6). Реестр `AGI-ITEMS-CONFIG/agi-items.json`
+  // 🔒 СЕРВЕРНАЯ ВЕТКА КЛИЕНТСКОГО МОДУЛЯ (257-6). Реестр `AGI-ITEMS-REGISTRY/agi-items.json`
   // здесь не читается намеренно: файл с "use client" уезжает в браузер, а с ним
   // уехал бы и `node:fs`. Адрес приходит переменной, которую пишет установщик,
   // взяв её из того же реестра — производное, а не вторая копия.

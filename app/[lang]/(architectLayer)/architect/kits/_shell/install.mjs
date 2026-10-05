@@ -24,7 +24,7 @@ const target = args.find((a, i) => !a.startsWith('--') && i !== fromIdx + 1)
 
 function siteDir() {
   if (fromArg) return resolve(fromArg)
-  const reg = JSON.parse(readFileSync(join(NODE, 'AGI-ITEMS-CONFIG', 'agi-items.json'), 'utf8'))
+  const reg = JSON.parse(readFileSync(join(NODE, 'AGI-ITEMS-REGISTRY', 'agi-items.json'), 'utf8'))
   const root = (reg.services ?? []).find((s) => s.id === 'root')
   if (!root) return null
   return join(NODE, 'AGI-ITEMS', root.kind === 'user' ? 'user' : 'core', 'root')

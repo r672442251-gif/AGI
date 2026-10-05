@@ -62,7 +62,7 @@ for (const id of ids) {
   // 287: журнал развёртываний — откат берёт из него последнюю УСПЕШНУЮ версию элемента.
   let version = null
   try {
-    version = (JSON.parse(readFileSync(join(ROOT, 'AGI-ITEMS-CONFIG', 'agi-items.json'), 'utf8')).services || []).find((s) => s.id === id)?.version ?? null
+    version = (JSON.parse(readFileSync(join(ROOT, 'AGI-ITEMS-REGISTRY', 'agi-items.json'), 'utf8')).services || []).find((s) => s.id === id)?.version ?? null
   } catch { /* реестр не прочитан — версия неизвестна */ }
   appendFileSync(join(ROOT, 'logs', 'deploy-history.jsonl'), JSON.stringify({ id, version, ok, at: new Date().toISOString() }) + '\n')
   // 344-3: развёрнутая версия уходит и в копию публичных страниц в Cloudflare (только у элемента со своим доменом).

@@ -2,7 +2,7 @@
 //
 // Две сущности, и они разной природы — это не одно знание в двух файлах:
 //
-//   RegistryEntry — «ЗНАЕТ ВСЁ ОБО ВСЕХ». Лежит в AGI-ITEMS-CONFIG/agi-items.json,
+//   RegistryEntry — «ЗНАЕТ ВСЁ ОБО ВСЕХ». Лежит в AGI-ITEMS-REGISTRY/agi-items.json,
 //                   в git, виден в git diff. Его пишем мы.
 //   ServiceProps  — «ЗНАЕТ ТОЛЬКО СЕБЯ». Лежит в репозитории службы
 //                   (OWN-SERVICE-PROPS.json). Его пишет автор службы, а установщик

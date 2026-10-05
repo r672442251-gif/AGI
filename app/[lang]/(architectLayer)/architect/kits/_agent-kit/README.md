@@ -57,7 +57,7 @@ process, while there are as many kit copies as services. The mount knows no serv
 
 ## Before installing — check all of these
 
-1. The service is in `AGI-ITEMS-CONFIG/agi-items.json` (`"id": "<service>"`, `"kind": "core"|"user"`) and
+1. The service is in `AGI-ITEMS-REGISTRY/agi-items.json` (`"id": "<service>"`, `"kind": "core"|"user"`) and
    the folder `AGI-ITEMS/<kind>/<service>/` exists. The agent is born in that folder — **the folder is the agent's identity** (`CLAUDE.md`,
    settings and tools are read from there).
    **The node's own agent skips this check entirely:** install it with `--node`, and the agent is born in

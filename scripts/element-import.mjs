@@ -103,7 +103,7 @@ git(['remote', 'set-url', 'origin', `https://github.com/${target}.git`], tmp)
 if (!existsSync(join(tmp, 'OWN-SERVICE-PROPS.json'))) {
   const { prepareRepoElement } = await import('./repo-element.mjs')
   let template = null
-  try { template = JSON.parse(readFileSync(join(ROOT, 'AGI-ITEMS-CONFIG', 'item-template.json'), 'utf8')) } catch { /* шаблона нет */ }
+  try { template = JSON.parse(readFileSync(join(ROOT, 'AGI-ITEMS-REGISTRY', 'item-template.json'), 'utf8')) } catch { /* шаблона нет */ }
   const r = prepareRepoElement({ dir: tmp, id, template, root: ROOT, git: (args, cwd) => git(args, cwd) })
   if (!r.ok) fail(`проект не распознан: ${r.reason}`)
 }

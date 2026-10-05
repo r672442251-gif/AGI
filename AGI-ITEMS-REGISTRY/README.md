@@ -1,11 +1,11 @@
-# `AGI-ITEMS-CONFIG/` — the registry of this node's items
+# `AGI-ITEMS-REGISTRY/` — the registry of this node's items
 
 `agi-items.json` says **which AGI items this node is made of and at which exact version**. It is the
 entity «knows everything about everyone» of the node laws; an item's own passport
 (`OWN-SERVICE-PROPS.json` in its repository) is the entity «knows only itself». The registry only reads
 the passport, it never writes it.
 
-🛑 **THIS FOLDER IS NOT ONE OF THE FOUR CONFIGS**, although the name looks like theirs. `APP-CONFIG`,
+🛑 **THIS FOLDER IS NOT ONE OF THE FOUR CONFIGS** — it was named `AGI-ITEMS-CONFIG` until node step 398 (owner 2026-10-05: «вместо CONFIG написать реестр»), and the name misled. `APP-CONFIG`,
 `PLATFORM-CONFIG`, `DESIGN-CONFIG` and `PRODUCTS-CONFIG` are values a person edits, they carry a generated
 `schema.json` and `defaults.json`, and `check:config-schemas` guards them. Here there is neither schema nor
 defaults: this is the **state of one machine** — what is installed and from where. Its guard is

@@ -8,7 +8,7 @@ import { addressOf } from "@/lib/agi-items/address-file.mjs"
 // новую группу страниц на вкладке архитектора … название этого микро сервиса будет CUID.<domain> эти страницы сразу должны
 // появиться … без нового развёртывания»).
 //
-// 🔒 ЧЕРНОВИК — НЕ ЗАПИСЬ РЕЕСТРА. `AGI-ITEMS-CONFIG/agi-items.json` читает установщик, и запись без репозитория он пытался
+// 🔒 ЧЕРНОВИК — НЕ ЗАПИСЬ РЕЕСТРА. `AGI-ITEMS-REGISTRY/agi-items.json` читает установщик, и запись без репозитория он пытался
 // бы ставить. Черновик живёт в данных ядра (`data/` целиком вне git): у него нет ни порта, ни поддомена, ни процесса — только
 // имя и группа страниц архитектора. Порт и поддомен — следующий разговор (слово владельца: «порт пока не выделяй»,
 // «мы ещё не генерировали сам субдомен»).
@@ -35,7 +35,7 @@ export const RESERVED_NAMES: ReadonlySet<string> = new Set([
 
 function registryIds(): string[] {
   try {
-    const r = JSON.parse(readFileSync(join(process.cwd(), "AGI-ITEMS-CONFIG", "agi-items.json"), "utf8")) as { services?: { id?: unknown }[] }
+    const r = JSON.parse(readFileSync(join(process.cwd(), "AGI-ITEMS-REGISTRY", "agi-items.json"), "utf8")) as { services?: { id?: unknown }[] }
     return (r.services ?? []).map((s) => s.id).filter((x): x is string => typeof x === "string")
   } catch {
     return []

@@ -10,7 +10,7 @@
       "command": "npm run agent-kit:add -- <group>\nnpm run agent-kit:add -- build --node --page claude-code=subscription:10\nnpm run serve:rebuild",
       "paramsHeaders": ["Parameter", "What it is"],
       "params": [
-        ["<group>", "the page group to install into; for a service it is the id from AGI-ITEMS-CONFIG/agi-items.json, and the folder AGI-ITEMS/<kind>/<group> must exist"],
+        ["<group>", "the page group to install into; for a service it is the id from AGI-ITEMS-REGISTRY/agi-items.json, and the folder AGI-ITEMS/<kind>/<group> must exist"],
         ["--node", "the agent lives in the node root instead of a service folder — this is how the node's own agent is installed; the registry is not consulted"],
         ["--page <template>=<name>[:<order>]", "name a page your own way; the templates are claude-code, terminal, telegram"],
         ["--force", "overwrite a kit that is already installed"]
@@ -69,7 +69,7 @@
         {
           "heading": "What the service needs",
           "items": [
-            "An entry in AGI-ITEMS-CONFIG/agi-items.json and the folder AGI-ITEMS/<kind>/<service>. The node's own agent needs neither: it is installed with --node and works in the node root.",
+            "An entry in AGI-ITEMS-REGISTRY/agi-items.json and the folder AGI-ITEMS/<kind>/<service>. The node's own agent needs neither: it is installed with --node and works in the node root.",
             "Its own page group architect/<service>/ — the installer puts the kit into it.",
             "On the computer: Claude Code, Bun and the telegram@claude-plugins-official plugin; the plugin dependencies are installed by themselves on the first start."
           ]
@@ -95,7 +95,7 @@
       "command": "npm run agent-kit:add -- <группа>\nnpm run agent-kit:add -- build --node --page claude-code=subscription:10\nnpm run serve:rebuild",
       "paramsHeaders": ["Параметр", "Что это"],
       "params": [
-        ["<группа>", "группа страниц architect/<группа>/, в которую кладётся комплект; для службы это имя из AGI-ITEMS-CONFIG/agi-items.json, и папка AGI-ITEMS/<kind>/<группа> должна существовать"],
+        ["<группа>", "группа страниц architect/<группа>/, в которую кладётся комплект; для службы это имя из AGI-ITEMS-REGISTRY/agi-items.json, и папка AGI-ITEMS/<kind>/<группа> должна существовать"],
         ["--node", "агент живёт в корне узла, а не в папке службы, — так ставится агент самого узла; реестр не спрашивается"],
         ["--page <шаблон>=<имя>[:<порядок>]", "назвать страницу по-своему; шаблоны — claude-code, terminal, telegram"],
         ["--force", "переустановить уже установленный комплект"]
@@ -154,7 +154,7 @@
         {
           "heading": "Что нужно службе",
           "items": [
-            "Запись в AGI-ITEMS-CONFIG/agi-items.json и папка AGI-ITEMS/<kind>/<служба>. Агенту самого узла этого не нужно: у него флаг --node, и рабочая папка — корень узла.",
+            "Запись в AGI-ITEMS-REGISTRY/agi-items.json и папка AGI-ITEMS/<kind>/<служба>. Агенту самого узла этого не нужно: у него флаг --node, и рабочая папка — корень узла.",
             "Своя группа страниц architect/<служба>/ — установщик кладёт комплект в неё.",
             "На компьютере: Claude Code, Bun и плагин telegram@claude-plugins-official; зависимости плагина ставятся сами при первом запуске."
           ]

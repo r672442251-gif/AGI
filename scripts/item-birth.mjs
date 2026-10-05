@@ -3,7 +3,7 @@
 // 🎯 Слово владельца 2026-09-27: «стартер Fractera item starter скачивался [из] репозитория Fractera, но при этом чтобы была
 // возможность пользователя … сохранить его обновлённую версию на своем гит хаб». Отсюда устройство:
 //   1. черновик `<id>` (кнопка «Создать микросервис», 314-1) — единственный вход: рождается только то, что человек завёл;
-//   2. шаблон берётся по ЗАКРЕПЛЁННОМУ тегу из `AGI-ITEMS-CONFIG/item-template.json` в `AGI-ITEMS/user/<id>`;
+//   2. шаблон берётся по ЗАКРЕПЛЁННОМУ тегу из `AGI-ITEMS-REGISTRY/item-template.json` в `AGI-ITEMS/user/<id>`;
 //   3. история шаблона отрезается: у элемента своя история с первым коммитом «born from …» и НЕТ `origin` шаблона —
 //      это самостоятельный проект; в GitHub человека он уходит позже кнопкой (319-5);
 //   4. паспорт `OWN-SERVICE-PROPS.json` получает `id` элемента — все имена элемент читает оттуда;
@@ -25,7 +25,7 @@ const { REGISTRY_FILE, itemDir, entryDir } = require('../lib/agi-items/paths.cjs
 
 const ROOT = process.cwd()
 const DRAFTS_FILE = join(ROOT, 'data', 'agi-drafts.json')
-const TEMPLATE_FILE = join(ROOT, 'AGI-ITEMS-CONFIG', 'item-template.json')
+const TEMPLATE_FILE = join(ROOT, 'AGI-ITEMS-REGISTRY', 'item-template.json')
 const ID = /^[a-z][a-z0-9]{4,23}$/
 const t0 = Date.now()
 const say = (m) => console.log(m)

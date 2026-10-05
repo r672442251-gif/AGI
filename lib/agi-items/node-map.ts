@@ -9,14 +9,14 @@ import { storedToken } from "@/app/[lang]/(architectLayer)/architect/build/githu
 // просто делаем Fork основного проекта» — уточнено: клон СВОЕГО форка, в нём карта, по ней установщик поднимает каждый элемент
 // из репозитория человека.
 //
-// 🔒 СНИМОК — ОТДЕЛЬНЫЙ ФАЙЛ `AGI-ITEMS-CONFIG/agi-items.node.json`, А НЕ `agi-items.json`. Тот Fractera сама меняет, поднимая
+// 🔒 СНИМОК — ОТДЕЛЬНЫЙ ФАЙЛ `AGI-ITEMS-REGISTRY/agi-items.node.json`, А НЕ `agi-items.json`. Тот Fractera сама меняет, поднимая
 // теги, — коммит человека в нём ломал бы «Sync fork» конфликтом при каждом выпуске. Снимок Fractera не выпускает никогда.
 // 🔒 УЗЕЛ АВТОРА НИКУДА НЕ ОТПРАВЛЯЕТ: его `origin` — сам оригинал (`logs/origin.json` verdict `author`), и состояние узла ушло бы
 // в публичный репозиторий Fractera. Отправляет только узел, чей `origin` — форк (verdict `fork`, шаг 368).
 // 🔒 КОММИТ — ТОЛЬКО ЭТОГО ФАЙЛА (pathspec): прочие изменённые конфиги ядра не трогаются. Ключ — разовым адресом, не в `git remote`.
 
 const ROOT = process.cwd()
-const SNAPSHOT = join("AGI-ITEMS-CONFIG", "agi-items.node.json")
+const SNAPSHOT = join("AGI-ITEMS-REGISTRY", "agi-items.node.json")
 
 function git(args: string[]) {
   const r = spawnSync("git", ["-C", ROOT, "-c", "credential.helper=", ...args], {

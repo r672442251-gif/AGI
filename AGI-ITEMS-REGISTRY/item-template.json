@@ -2,5 +2,5 @@
   "_": "Where a new element is born from (node step 319, owner's decision 2026-09-27: the item starter is downloaded from the Fractera repository by a pinned tag; the born element then lives as its own project and is exported to the person's GitHub by a button). Read by scripts/item-birth.mjs. A new template release = a new tag here.",
   "from": "fractera-item-starter",
   "repo": "https://github.com/Fractera/fractera-item-starter.git",
-  "version": "v0.3.64"
+  "version": "v0.3.66"
 }

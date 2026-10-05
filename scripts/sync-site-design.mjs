@@ -27,7 +27,7 @@ function key() {
 
 function sitePort() {
   try {
-    const reg = JSON.parse(readFileSync(join(ROOT, 'AGI-ITEMS-CONFIG', 'agi-items.json'), 'utf8'))
+    const reg = JSON.parse(readFileSync(join(ROOT, 'AGI-ITEMS-REGISTRY', 'agi-items.json'), 'utf8'))
     const root = (reg.services ?? []).find((s) => s.id === 'root')
     return root && Number.isInteger(root.port) ? root.port : null
   } catch {

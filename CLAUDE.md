@@ -355,9 +355,14 @@ no users yet (the first one becomes the architect) and shows "First time here?" 
 🔒 **AN ITEM OF THIS NODE LIVES IN `AGI-ITEMS/<kind>/<id>/`, AND `kind` DECIDES THE PATH** (owner's word
 2026-09-22): `core` — installed by the node itself (`auth`, `data`, `root` — see the next section), `user` —
 connected by the person.
-The registry is **`AGI-ITEMS-CONFIG/agi-items.json`** (repo + pinned tag + port + `kind`), and its README
+The registry is **`AGI-ITEMS-REGISTRY/agi-items.json`** (repo + pinned tag + port + `kind`), and its README
 says out loud that this folder is **not** one of the four configs: no schema, no defaults, it is the state
-of one machine. 🪦 Until 272: `MICROSERVICES.json` in the root and `microservices/<id>`.
+of one machine. 🪦 Until 272: `MICROSERVICES.json` in the root and `microservices/<id>`. 🪦 Until 398 (2026-10-05) the
+folder was `AGI-ITEMS-CONFIG` — renamed by the owner's word («вместо CONFIG написать реестр»).
+🛑 **Updating a node whose registry carries local state:** `agi-items.json` is in git AND holds this machine's state, so a
+plain `git pull` that touches it refuses («Your local changes … would be overwritten») and the node silently stays old.
+Update with `git stash && git pull && git stash pop` — measured in 398: the state follows even a folder rename. Then
+`npm run services:install` (services get the new `NODE_ITEMS_FILE`) and `npm run serve:rebuild`.
 
 🔒 **THE PATH IS BUILT IN ONE PLACE — `lib/agi-items/paths.cjs`** (`ITEMS_DIR`, `REGISTRY_FILE`,
 `itemDir(id, kind)`, `entryDir(entry)`), read by the build (`.ts`), the scripts (`.mjs`) and
@@ -377,7 +382,7 @@ Proven by the owner's full cycle on a Mac (remove → reinstall from the fork �
   replace them all — element subdomains and own domains were wiped) · rebuilds every element whose `ARCHITECT_URL` /
   `NEXT_PUBLIC_AUTH_URL` still name this computer (`lib/domain/stale-addresses.cjs` → `deploy-elements.mjs`; ✗ the site root,
   installed before the domain, sent a phone to `localhost:24680` after sign-in) · copies every address (`--all`).
-- 🔒 **A fork carrying the old node's map** (`AGI-ITEMS-CONFIG/agi-items.node.json`) without a GitHub token installs the
+- 🔒 **A fork carrying the old node's map** (`AGI-ITEMS-REGISTRY/agi-items.node.json`) without a GitHub token installs the
   required elements from the Fractera original; the person's own elements wait in `data/node/restore-pending.json` and come
   back on the next install with a token (`scripts/services-install.mjs`). ✗ Before: no element installed at all.
 - 🔒 **On this computer** a 30 px bar above the header says whether the site is online through Cloudflare («Ask Cloudflare»,
@@ -415,7 +420,7 @@ the installer, the doors. The agent of «Root» (`AGI-ITEMS/core/root`, pages `/
 site. The core agent does not edit the site's code; the site agent does not edit the core.
 
 🔒 **TO PUT ANOTHER SITE IN — ONE LINE, AND THE REPOSITORY MUST KEEP THE CONTRACT.** Change `repo` and
-`version` of the `root` line in `AGI-ITEMS-CONFIG/agi-items.json`, then `npm run services:install`. The
+`version` of the `root` line in `AGI-ITEMS-REGISTRY/agi-items.json`, then `npm run services:install`. The
 contract is in the site's `OWN-SERVICE-PROPS.json` and README: port from `PORT`, `GET /api/health` without a
 session, sign-in only through `auth`, data only through `data`, static public pages, and — inside the node —
 the build root named in `next.config` (`outputFileTracingRoot`, `turbopack.root`), otherwise Next takes the
@@ -470,7 +475,7 @@ account or a container, and it is not built.
 
 **Commands:** `npm run agent-kit:add -- <group>` · `--node` · `--page <tpl>=<name>[:<order>]` · `--force` ·
 `npm run agent-kit:update -- <group>` (repeats the previous install from the manifest), then
-`npm run serve:rebuild`. A service must be in `AGI-ITEMS-CONFIG/agi-items.json`, have `AGI-ITEMS/<kind>/<id>` and its
+`npm run serve:rebuild`. A service must be in `AGI-ITEMS-REGISTRY/agi-items.json`, have `AGI-ITEMS/<kind>/<id>` and its
 own page group; with `--node` the registry is not consulted. Embedded today: `auth`, `data`, `build` (the node).
 🛑 The first start in a new service folder asks Claude Code's trust question — answer «Yes» in its terminal.
 🛑 The subscription is one per machine: its page is the same for every service.
@@ -668,7 +673,7 @@ Dashboard) are CHANGED by the person exactly like born ones — «их отли�
 - **Sending** — by button; an agent sends on request; a task from **Telegram is committed and sent at once**: the kit appends a rule to
   every element agent's launch (`--append-system-prompt`, `telegram.cjs githubRule`) naming `node <node>/scripts/element-github-push.mjs <id>`.
 - **Map** `lib/agi-items/registry-map.mjs` (`npm run registry:map`): `address`, `domain`, `github` next to `port` and `summary` in
-  `agi-items.json`; `lib/agi-items/node-map.ts` writes the snapshot `AGI-ITEMS-CONFIG/agi-items.node.json` and pushes ONLY that file
+  `agi-items.json`; `lib/agi-items/node-map.ts` writes the snapshot `AGI-ITEMS-REGISTRY/agi-items.node.json` and pushes ONLY that file
   to the person's fork. 🛑 A separate file: `agi-items.json` is changed by Fractera on every release — a person's commit in it would
   make «Sync fork» conflict. 🛑 The author's node (`logs/origin.json` verdict `author`) never pushes — it would write the original.
 - **Restore** = clone YOUR fork (not a new fork of Fractera): on a machine without `data/services` the installer merges the snapshot and
@@ -719,7 +724,7 @@ online is new system behaviour — only on his separate word. The island asks on
 **Create a microservice** → draft `<id>` (`data/agi-drafts.json`) → **Give birth to the element** (the draft's home;
 `POST /api/architect/drafts/<id>/birth` runs `scripts/item-birth.mjs <id>` detached, progress from `logs/birth-<id>.log`;
 CLI: `npm run items:birth -- <id>`). The birth clones `fractera-item-starter` at the tag in
-`AGI-ITEMS-CONFIG/item-template.json` (owner: from the Fractera repository), cuts the template's history (own `main`, first
+`AGI-ITEMS-REGISTRY/item-template.json` (owner: from the Fractera repository), cuts the template's history (own `main`, first
 commit «born from …», no `origin`), writes the passport id, adds a registry entry with `born: { from, version, at }`, runs the
 usual `services-install.mjs --only <id>`, starts the service and its watch in pm2 and waits for `/api/health` by fact.
 🔒 **Born in the project's look** (owner 2026-10-01: «по дефолту должен сразу подключиться к настройкам всего проекта»): before
@@ -759,7 +764,12 @@ A born element is not deleted as a draft (409). Not built yet: birth in seconds.
   Without `domain.json` the main address is the element's subdomain (template v0.3.63, step 394), never the root's `url`.
   **`npm run check:addresses [id…]`** (step 395) checks every `user` site over the internet: robots Host/Sitemap, each
   sitemap `<loc>`, home canonical/hreflang on the main address; the other addresses answer 301/308 to it; exit 1 on any
-  violation. Command only — no timer, no button. Negative control: `--expect <id>=<wrong url>`. After every click the core redraws the element by loopback (`redrawElement`). «Disconnect» (DELETE) reverses it.
+  violation; an address missing from DNS is «not on the internet», not a violation. Command only — no timer, no button.
+  Negative control: `--expect <id>=<wrong url>`. 🛑 Run it after the Workers copy is out, not right after `deploy-elements`:
+  the copy uploads in the background (measured on the Mac 2026-10-05: deploy done 06:51:46, copy 06:52:03) and the first run
+  reads the old copy — see `logs/static-copy-<id>.log` «Worker … выложен». The root site (root-starter v1.7.34, step 396)
+  takes the node's domain the same way; the seed `APP-CONFIG` of both templates carries an empty `url`.
+  After every click the core redraws the element by loopback (`redrawElement`). «Disconnect» (DELETE) reverses it.
   🛑 Files with a dot in the path on the secondary name are not redirected (proxy matcher) — pages are.
 - **Links: CONFIG · Design · Blocks** (324-7, `lib/agi-items/element-links.ts`, `/api/architect/items/<id>/links`):
   `data/services/<id>/links.json`; the element reads it (`linkOn`). CONFIG off — the last project-settings copy is adopted
@@ -1321,7 +1331,11 @@ language.
   ✗ Paid for 2026-09-19: the guard pointed at `TRANSLATION-DEBT.md` as the home of the debts, and the
   file did not exist in this repository at all — the practice was named nowhere, so nobody could follow
   it.
-- 🔒 **THE DEBT LINE IS NOW ENFORCED, NOT REQUESTED (256-10).** `check-content` fails the build when a
+- 🪦 **«FAILS THE BUILD» CANCELLED BY THE OWNER 2026-10-05 (step 397: «y , for root and for all»).** An unregistered
+  folder is now a build **warning**; only `npm run check:content -- --strict` refuses. ✗ Enabling a language in the panel
+  on a site of N pages gave N refusals and the element could not be rebuilt for any reason — root stood so for 4 days
+  (fr since 2026-10-01). The guard still names every untranslated folder on every build. The text below is history.
+- **THE DEBT LINE WAS ENFORCED, NOT REQUESTED (256-10).** `check-content` failed the build when a
   `_data` folder has no cell for an enabled language **and is not named in `TRANSLATION-DEBT.md`**.
   Note the asymmetry, it is deliberate: the *missing translation* is only a warning (unwritten prose
   must not black out a working site), while the *missing record* is a refusal — a debt nobody wrote
@@ -2390,7 +2404,7 @@ own law about an instrument that prints a remembered value.
 
 | Piece | Where | What it does |
 |---|---|---|
-| door | `app/api/services/route.ts` — `GET /api/services` | the node's composition out of `AGI-ITEMS-CONFIG/agi-items.json`, read on every request |
+| door | `app/api/services/route.ts` — `GET /api/services` | the node's composition out of `AGI-ITEMS-REGISTRY/agi-items.json`, read on every request |
 | island | `components/services/service-port.client.tsx` | asks that door and prints the port |
 | its words | `components/services/service-port.i18n.ts` | `en` + `ru`, picked on the server, passed in as props |
 | block kind | `servicePort` — renderer `sections/blocks/service-port.server.tsx` | how a page puts the island on itself |

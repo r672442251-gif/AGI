@@ -16,7 +16,7 @@ export const en: WorkspacePageWords = {
       text:
         'The site lives next to sign-in and data, not inside the core. It keeps its own settings and keeps working if the core stops; the core reaches in to adjust them.',
       points: [
-        'Its own repository and a pinned version in AGI-ITEMS-CONFIG/agi-items.json.',
+        'Its own repository and a pinned version in AGI-ITEMS-REGISTRY/agi-items.json.',
         'Its own port, assigned by the node, and its own agent in the terminal of this section.',
         'Replace it with another repository by changing one line — see «External GitHub».',
       ],

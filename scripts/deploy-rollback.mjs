@@ -5,7 +5,7 @@
 // никакой сессии: она работает там, где лежит узел. Кнопка дашборда зовёт ту же команду.
 //
 // Что делает: берёт предыдущую рабочую версию (`lib/deploy/previous-version.cjs`), ставит её в реестр
-// `AGI-ITEMS-CONFIG/agi-items.json` и развёртывает элемент тем же установщиком (`deploy-elements.mjs`) — сборка в
+// `AGI-ITEMS-REGISTRY/agi-items.json` и развёртывает элемент тем же установщиком (`deploy-elements.mjs`) — сборка в
 // соседнюю папку без остановки. 🛑 База данных элемента (`data/services/<id>`) откатом кода НЕ откатывается.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'

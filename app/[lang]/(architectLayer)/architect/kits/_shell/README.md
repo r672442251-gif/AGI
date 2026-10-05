@@ -44,7 +44,7 @@ It replaces `components/shell/` of the service with the site's, copies the shadc
 (`button`, `sheet`, `separator`, `badge`, `dropdown-menu`, `lib/utils`) **only when the service has none**, and adds
 missing dependencies (`radix-ui`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`) to its
 `package.json` — then run `npm install` in the service. 🔒 Into the service's **source** (repository or fork), never
-into `AGI-ITEMS/<kind>/<id>/`; then commit, tag, bump the version in `AGI-ITEMS-CONFIG/agi-items.json`, deploy.
+into `AGI-ITEMS/<kind>/<id>/`; then commit, tag, bump the version in `AGI-ITEMS-REGISTRY/agi-items.json`, deploy.
 
 **Environment** — declare in the service's `.env.example` with `# kind: derived`; the node installer answers:
 

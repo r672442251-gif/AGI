@@ -46,7 +46,7 @@ export function connectedDomainAuthBase(): string | null {
 // Build the Auth service base URL as the BROWSER must reach it, from a request's
 // host header and protocol. `host` is the Host / X-Forwarded-Host value (may carry
 // a :port in IP mode); `proto` is http or https (X-Forwarded-Proto). Falls back to
-// the address from AGI-ITEMS-CONFIG/agi-items.json when host is missing (e.g. an internal
+// the address from AGI-ITEMS-REGISTRY/agi-items.json when host is missing (e.g. an internal
 // request without a host) — no port is remembered here any more (step 257-6).
 export function authBaseFromHost(host: string | null, proto: string): string {
   // 🔒 259-8: СВОЙ ДОМЕН ИМЕЕТ ПРИОРИТЕТ НАД РЕЕСТРОМ — для запроса С ЭТОГО ДОМЕНА.

@@ -82,7 +82,7 @@
     {
       "id": "root",
       "repo": "https://github.com/Fractera/fractera-root-starter.git",
-      "version": "v1.7.34",
+      "version": "v1.7.36",
       "port": 24683,
       "provides": [
         "site"
@@ -94,7 +94,7 @@
     {
       "id": "blocks",
       "repo": "https://github.com/Fractera/fractera-blocks-starter.git",
-      "version": "v0.5.21",
+      "version": "v0.5.22",
       "provides": [
         "page-blocks"
       ],

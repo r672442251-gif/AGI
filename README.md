@@ -125,7 +125,7 @@ npm run serve:remove -- --yes  # take the node off this computer (its processes 
 ```
 
 **The node's elements arrive on the first start.** This repository carries only their list,
-`AGI-ITEMS-CONFIG/agi-items.json`: sign-in (`auth`), data (`data`) and the site at the root of your
+`AGI-ITEMS-REGISTRY/agi-items.json`: sign-in (`auth`), data (`data`) and the site at the root of your
 domain (`root`). Each is its own repository, and `serve:start` clones any that are missing at the
 pinned tag into `AGI-ITEMS/core/<id>` (the same as `npm run services:install`). They come from the
 Fractera repositories on GitHub; a node that is already installed does not need GitHub to run.
