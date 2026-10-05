@@ -357,7 +357,12 @@ no users yet (the first one becomes the architect) and shows "First time here?" 
 connected by the person.
 The registry is **`AGI-ITEMS-REGISTRY/agi-items.json`** (repo + pinned tag + port + `kind`), and its README
 says out loud that this folder is **not** one of the four configs: no schema, no defaults, it is the state
-of one machine. 🪦 Until 272: `MICROSERVICES.json` in the root and `microservices/<id>`.
+of one machine. 🪦 Until 272: `MICROSERVICES.json` in the root and `microservices/<id>`. 🪦 Until 398 (2026-10-05) the
+folder was `AGI-ITEMS-CONFIG` — renamed by the owner's word («вместо CONFIG написать реестр»).
+🛑 **Updating a node whose registry carries local state:** `agi-items.json` is in git AND holds this machine's state, so a
+plain `git pull` that touches it refuses («Your local changes … would be overwritten») and the node silently stays old.
+Update with `git stash && git pull && git stash pop` — measured in 398: the state follows even a folder rename. Then
+`npm run services:install` (services get the new `NODE_ITEMS_FILE`) and `npm run serve:rebuild`.
 
 🔒 **THE PATH IS BUILT IN ONE PLACE — `lib/agi-items/paths.cjs`** (`ITEMS_DIR`, `REGISTRY_FILE`,
 `itemDir(id, kind)`, `entryDir(entry)`), read by the build (`.ts`), the scripts (`.mjs`) and
