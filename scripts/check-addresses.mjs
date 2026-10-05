@@ -76,8 +76,13 @@ for (const s of sites) {
   const notes = []
   const wrong = (where, value) => { if (originOf(value) !== main) bad.push(`${where}: ${value}`) }
 
-  // robots.txt
+  // 395-2 (вывод владельца с Mac, 2026-10-05): `blocks.aifa.dev` → ENOTFOUND дал два «нарушения». Имени нет в DNS — сайт не
+  // выведен в интернет (поддомен не подключён), поисковику он не виден вовсе; это не ошибка адреса, а строка о состоянии.
   const robots = await get(`${base}/robots.txt?${bust()}`)
+  if (robots.error === 'ENOTFOUND') {
+    console.log(`\n· ${name} — ${base} · ${a.how}\n   адреса нет в DNS: сайт не выведен в интернет, проверять для поисковиков нечего`)
+    continue
+  }
   if (robots.status !== 200) bad.push(`robots.txt не отвечает (${robots.status || robots.error})`)
   else {
     const lines = robots.text.split(/\r?\n/)
