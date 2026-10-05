@@ -39,7 +39,7 @@ if (!node?.zone) {
 }
 const zone = node.zone
 
-const services = readJson(join(ROOT, 'AGI-ITEMS-CONFIG', 'agi-items.json'))?.services ?? []
+const services = readJson(join(ROOT, 'AGI-ITEMS-REGISTRY', 'agi-items.json'))?.services ?? []
 const sites = services.filter((s) => s.kind === 'user' && (only.length === 0 || only.includes(s.id)))
 
 /** Главный адрес и прочие адреса сайта — правило `domainRecord`. */

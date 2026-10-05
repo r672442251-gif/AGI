@@ -355,7 +355,7 @@ no users yet (the first one becomes the architect) and shows "First time here?" 
 🔒 **AN ITEM OF THIS NODE LIVES IN `AGI-ITEMS/<kind>/<id>/`, AND `kind` DECIDES THE PATH** (owner's word
 2026-09-22): `core` — installed by the node itself (`auth`, `data`, `root` — see the next section), `user` —
 connected by the person.
-The registry is **`AGI-ITEMS-CONFIG/agi-items.json`** (repo + pinned tag + port + `kind`), and its README
+The registry is **`AGI-ITEMS-REGISTRY/agi-items.json`** (repo + pinned tag + port + `kind`), and its README
 says out loud that this folder is **not** one of the four configs: no schema, no defaults, it is the state
 of one machine. 🪦 Until 272: `MICROSERVICES.json` in the root and `microservices/<id>`.
 
@@ -377,7 +377,7 @@ Proven by the owner's full cycle on a Mac (remove → reinstall from the fork �
   replace them all — element subdomains and own domains were wiped) · rebuilds every element whose `ARCHITECT_URL` /
   `NEXT_PUBLIC_AUTH_URL` still name this computer (`lib/domain/stale-addresses.cjs` → `deploy-elements.mjs`; ✗ the site root,
   installed before the domain, sent a phone to `localhost:24680` after sign-in) · copies every address (`--all`).
-- 🔒 **A fork carrying the old node's map** (`AGI-ITEMS-CONFIG/agi-items.node.json`) without a GitHub token installs the
+- 🔒 **A fork carrying the old node's map** (`AGI-ITEMS-REGISTRY/agi-items.node.json`) without a GitHub token installs the
   required elements from the Fractera original; the person's own elements wait in `data/node/restore-pending.json` and come
   back on the next install with a token (`scripts/services-install.mjs`). ✗ Before: no element installed at all.
 - 🔒 **On this computer** a 30 px bar above the header says whether the site is online through Cloudflare («Ask Cloudflare»,
@@ -415,7 +415,7 @@ the installer, the doors. The agent of «Root» (`AGI-ITEMS/core/root`, pages `/
 site. The core agent does not edit the site's code; the site agent does not edit the core.
 
 🔒 **TO PUT ANOTHER SITE IN — ONE LINE, AND THE REPOSITORY MUST KEEP THE CONTRACT.** Change `repo` and
-`version` of the `root` line in `AGI-ITEMS-CONFIG/agi-items.json`, then `npm run services:install`. The
+`version` of the `root` line in `AGI-ITEMS-REGISTRY/agi-items.json`, then `npm run services:install`. The
 contract is in the site's `OWN-SERVICE-PROPS.json` and README: port from `PORT`, `GET /api/health` without a
 session, sign-in only through `auth`, data only through `data`, static public pages, and — inside the node —
 the build root named in `next.config` (`outputFileTracingRoot`, `turbopack.root`), otherwise Next takes the
@@ -470,7 +470,7 @@ account or a container, and it is not built.
 
 **Commands:** `npm run agent-kit:add -- <group>` · `--node` · `--page <tpl>=<name>[:<order>]` · `--force` ·
 `npm run agent-kit:update -- <group>` (repeats the previous install from the manifest), then
-`npm run serve:rebuild`. A service must be in `AGI-ITEMS-CONFIG/agi-items.json`, have `AGI-ITEMS/<kind>/<id>` and its
+`npm run serve:rebuild`. A service must be in `AGI-ITEMS-REGISTRY/agi-items.json`, have `AGI-ITEMS/<kind>/<id>` and its
 own page group; with `--node` the registry is not consulted. Embedded today: `auth`, `data`, `build` (the node).
 🛑 The first start in a new service folder asks Claude Code's trust question — answer «Yes» in its terminal.
 🛑 The subscription is one per machine: its page is the same for every service.
@@ -668,7 +668,7 @@ Dashboard) are CHANGED by the person exactly like born ones — «их отли�
 - **Sending** — by button; an agent sends on request; a task from **Telegram is committed and sent at once**: the kit appends a rule to
   every element agent's launch (`--append-system-prompt`, `telegram.cjs githubRule`) naming `node <node>/scripts/element-github-push.mjs <id>`.
 - **Map** `lib/agi-items/registry-map.mjs` (`npm run registry:map`): `address`, `domain`, `github` next to `port` and `summary` in
-  `agi-items.json`; `lib/agi-items/node-map.ts` writes the snapshot `AGI-ITEMS-CONFIG/agi-items.node.json` and pushes ONLY that file
+  `agi-items.json`; `lib/agi-items/node-map.ts` writes the snapshot `AGI-ITEMS-REGISTRY/agi-items.node.json` and pushes ONLY that file
   to the person's fork. 🛑 A separate file: `agi-items.json` is changed by Fractera on every release — a person's commit in it would
   make «Sync fork» conflict. 🛑 The author's node (`logs/origin.json` verdict `author`) never pushes — it would write the original.
 - **Restore** = clone YOUR fork (not a new fork of Fractera): on a machine without `data/services` the installer merges the snapshot and
@@ -719,7 +719,7 @@ online is new system behaviour — only on his separate word. The island asks on
 **Create a microservice** → draft `<id>` (`data/agi-drafts.json`) → **Give birth to the element** (the draft's home;
 `POST /api/architect/drafts/<id>/birth` runs `scripts/item-birth.mjs <id>` detached, progress from `logs/birth-<id>.log`;
 CLI: `npm run items:birth -- <id>`). The birth clones `fractera-item-starter` at the tag in
-`AGI-ITEMS-CONFIG/item-template.json` (owner: from the Fractera repository), cuts the template's history (own `main`, first
+`AGI-ITEMS-REGISTRY/item-template.json` (owner: from the Fractera repository), cuts the template's history (own `main`, first
 commit «born from …», no `origin`), writes the passport id, adds a registry entry with `born: { from, version, at }`, runs the
 usual `services-install.mjs --only <id>`, starts the service and its watch in pm2 and waits for `/api/health` by fact.
 🔒 **Born in the project's look** (owner 2026-10-01: «по дефолту должен сразу подключиться к настройкам всего проекта»): before
@@ -2399,7 +2399,7 @@ own law about an instrument that prints a remembered value.
 
 | Piece | Where | What it does |
 |---|---|---|
-| door | `app/api/services/route.ts` — `GET /api/services` | the node's composition out of `AGI-ITEMS-CONFIG/agi-items.json`, read on every request |
+| door | `app/api/services/route.ts` — `GET /api/services` | the node's composition out of `AGI-ITEMS-REGISTRY/agi-items.json`, read on every request |
 | island | `components/services/service-port.client.tsx` | asks that door and prints the port |
 | its words | `components/services/service-port.i18n.ts` | `en` + `ru`, picked on the server, passed in as props |
 | block kind | `servicePort` — renderer `sections/blocks/service-port.server.tsx` | how a page puts the island on itself |

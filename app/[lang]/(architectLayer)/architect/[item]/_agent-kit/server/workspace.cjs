@@ -16,7 +16,7 @@
 // установщик. 🛑 Имени конкретной группы здесь нет и быть не должно: комплект переносим.
 //
 // 🔒 ИМЯ ПРОВЕРЯЕТСЯ ПО МАНИФЕСТУ, РЕЕСТРУ И ДИСКУ: службы, которой нет в
-// `AGI-ITEMS-CONFIG/agi-items.json` или в `AGI-ITEMS/<kind>/<id>`, не существует — мост отказывает
+// `AGI-ITEMS-REGISTRY/agi-items.json` или в `AGI-ITEMS/<kind>/<id>`, не существует — мост отказывает
 // словами, а не рождает агента в чужой папке. Имя приходит из браузера, поэтому и форма имени
 // проверяется: путь из него собирается.
 
@@ -43,7 +43,7 @@ const ARCHITECT = path.join(ROOT, 'app', '[lang]', '(architectLayer)', 'architec
 
 function registered() {
   try {
-    const reg = JSON.parse(readFileSync(path.join(ROOT, 'AGI-ITEMS-CONFIG', 'agi-items.json'), 'utf8'))
+    const reg = JSON.parse(readFileSync(path.join(ROOT, 'AGI-ITEMS-REGISTRY', 'agi-items.json'), 'utf8'))
     return Array.isArray(reg.services) ? reg.services.filter((s) => s && typeof s.id === 'string') : []
   } catch {
     return []

@@ -26,7 +26,7 @@
 //   agent-api/<дверь>/route.ts  ← из `api/<дверь>/route.ts.tpl`
 //
 // 🛑 ДВА РОДА РАБОЧЕЙ ПАПКИ, И ОНИ ПРОВЕРЯЮТСЯ ПО-РАЗНОМУ:
-//   служба — обязана стоять в `AGI-ITEMS-CONFIG/agi-items.json` и лежать папкой `AGI-ITEMS/<kind>/<id>`;
+//   служба — обязана стоять в `AGI-ITEMS-REGISTRY/agi-items.json` и лежать папкой `AGI-ITEMS/<kind>/<id>`;
 //   узел   — `--node`: агент рождается в корне узла, реестр не спрашивается.
 // И в обоих случаях у группы должна существовать своя группа страниц `architect/<группа>/_data/index.ts`:
 // комплект кладёт себя В неё, а не придумывает группу молча.
@@ -137,9 +137,9 @@ const workspace = asBorn ? 'born-items' : asNode || (update && previous?.workspa
 const pages = asBorn ? [] : update && !namedPages && Array.isArray(previous?.pages) && previous.pages.length ? previous.pages : pagesFromArgs()
 
 if (workspace === 'agi-item') {
-  const reg = JSON.parse(readFileSync(join(ROOT, 'AGI-ITEMS-CONFIG', 'agi-items.json'), 'utf8'))
+  const reg = JSON.parse(readFileSync(join(ROOT, 'AGI-ITEMS-REGISTRY', 'agi-items.json'), 'utf8'))
   const entry = reg.services?.find((s) => s?.id === service)
-  if (!entry) fail(`службы «${service}» нет в AGI-ITEMS-CONFIG/agi-items.json (агенту самого узла нужен флаг --node)`)
+  if (!entry) fail(`службы «${service}» нет в AGI-ITEMS-REGISTRY/agi-items.json (агенту самого узла нужен флаг --node)`)
   const itemDir = join(ROOT, 'AGI-ITEMS', entry.kind === 'user' ? 'user' : 'core', service)
   if (!existsSync(itemDir)) fail(`нет папки ${itemDir} — агенту негде жить`)
 }

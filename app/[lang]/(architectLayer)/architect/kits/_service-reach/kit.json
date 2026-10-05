@@ -10,7 +10,7 @@
       "command": "{ kind: 'servicePort', serviceId: '<id>', words: servicePortWords(lang, '<id>') }",
       "paramsHeaders": ["Parameter", "What it is"],
       "params": [
-        ["<id>", "the service's eternal id in AGI-ITEMS-CONFIG/agi-items.json — auth, data, root, …"],
+        ["<id>", "the service's eternal id in AGI-ITEMS-REGISTRY/agi-items.json — auth, data, root, …"],
         ["/api/services", "the node's door: the port"],
         ["/api/node/reach", "the node's door: mode, address, DNS, tunnel route, answer; POST connects (architect)"]
       ],
@@ -41,7 +41,7 @@
       "command": "{ kind: 'servicePort', serviceId: '<id>', words: servicePortWords(lang, '<id>') }",
       "paramsHeaders": ["Параметр", "Что это"],
       "params": [
-        ["<id>", "вечное имя службы в AGI-ITEMS-CONFIG/agi-items.json — auth, data, root, …"],
+        ["<id>", "вечное имя службы в AGI-ITEMS-REGISTRY/agi-items.json — auth, data, root, …"],
         ["/api/services", "дверь узла: порт"],
         ["/api/node/reach", "дверь узла: режим, адрес, DNS, маршрут туннеля, ответ; POST подключает (архитектор)"]
       ],

@@ -35,7 +35,7 @@ export function content(lang: string): Block[] {
 }
 ```
 
-The service must be in `AGI-ITEMS-CONFIG/agi-items.json` (the door refuses an unknown id). A new service's name for the
+The service must be in `AGI-ITEMS-REGISTRY/agi-items.json` (the door refuses an unknown id). A new service's name for the
 first line («Your data service lives on port …») goes into `NAMES` in the words file; without it — «This service».
 
 ## What «Connect» does — and what it must never do

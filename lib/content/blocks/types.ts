@@ -115,7 +115,7 @@ export type LeafBlock =
   // Слова приходят В БЛОКЕ — рисовальщик серверный, словарь в браузер не едет.
   | { kind: 'domainLadder'; lang: string; words: import('@/components/domain/domain-ladder.i18n').DomainLadderWords }
   // Порт сменного блока, спрошенный у узла в браузере, а не запечённый в сборку.
-  // `serviceId` — вечное имя элемента в `AGI-ITEMS-CONFIG/agi-items.json` (`auth`, `data`, …).
+  // `serviceId` — вечное имя элемента в `AGI-ITEMS-REGISTRY/agi-items.json` (`auth`, `data`, …).
   // Экран включения входа через Google: адрес возврата, пара ключей, состояние.
   | { kind: 'authGoogleSetup'; words: import('@/components/auth/google-setup.i18n').GoogleSetupWords }
   // Экран включения входа письмом (Resend): аккаунт, домен, ключ, отправитель, состояние.
