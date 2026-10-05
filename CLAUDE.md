@@ -756,7 +756,10 @@ A born element is not deleted as a draft (409). Not built yet: birth in seconds.
   domain.json {domain, primary, url}`. «Main address» (PATCH) swaps who serves and who answers 301; the core answers 301/308
   by host (`lib/domain/mirror-redirect.ts`, proxy Job −2). The element calls itself by `url` from that file (template
   `lib/own-site.ts` → `getAppConfig` url + canonicalBase) — canonical, sitemap, hreflang, og follow the main address.
-  After every click the core redraws the element by loopback (`redrawElement`). «Disconnect» (DELETE) reverses it.
+  Without `domain.json` the main address is the element's subdomain (template v0.3.63, step 394), never the root's `url`.
+  **`npm run check:addresses [id…]`** (step 395) checks every `user` site over the internet: robots Host/Sitemap, each
+  sitemap `<loc>`, home canonical/hreflang on the main address; the other addresses answer 301/308 to it; exit 1 on any
+  violation. Command only — no timer, no button. Negative control: `--expect <id>=<wrong url>`. After every click the core redraws the element by loopback (`redrawElement`). «Disconnect» (DELETE) reverses it.
   🛑 Files with a dot in the path on the secondary name are not redirected (proxy matcher) — pages are.
 - **Links: CONFIG · Design · Blocks** (324-7, `lib/agi-items/element-links.ts`, `/api/architect/items/<id>/links`):
   `data/services/<id>/links.json`; the element reads it (`linkOn`). CONFIG off — the last project-settings copy is adopted
