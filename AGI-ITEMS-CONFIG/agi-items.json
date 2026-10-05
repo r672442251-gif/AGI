@@ -82,7 +82,7 @@
     {
       "id": "root",
       "repo": "https://github.com/Fractera/fractera-root-starter.git",
-      "version": "v1.7.33",
+      "version": "v1.7.34",
       "port": 24683,
       "provides": [
         "site"
