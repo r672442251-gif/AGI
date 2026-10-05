@@ -48,6 +48,21 @@ export type ElementGithubUi = {
   expires: string
   noExpiry: string
   forget: string
+  // 401: свой токен элемента — отдельная карточка с тремя кнопками, как у токена узла; итог — карточкой.
+  ownTitle: string
+  ownLead: string
+  ownSaved: string
+  ownSave: string
+  ownSaving: string
+  ownCheck: string
+  ownChecking: string
+  ownForget: string
+  ownSavedOk: string
+  ownCheckedOk: string
+  ownForgotOk: string
+  ownWriteYes: string
+  ownWriteNo: string
+  ownRepoInvisible: string
   push: string
   pushing: string
   pushHelp: string
@@ -126,6 +141,20 @@ const DICT: Record<string, ElementGithubUi> = {
     expires: "Token expires",
     noExpiry: "no expiry",
     forget: "Forget this item's own token",
+    ownTitle: "This item's own token",
+    ownLead: "Optional. Without it the item uses the node's common token. Give the item its own token for a repository in another GitHub account or to narrow access to one repository: a classic token with «repo» and «workflow».",
+    ownSaved: "Own token saved: …{tail}",
+    ownSave: "Save and check",
+    ownSaving: "Asking GitHub…",
+    ownCheck: "Check access",
+    ownChecking: "Checking…",
+    ownForget: "Forget the token",
+    ownSavedOk: "Saved and checked: GitHub accepts the token (account {login}). From now on this item works with its own token.",
+    ownCheckedOk: "The token works: GitHub accepts it (account {login}).",
+    ownForgotOk: "The item's own token is forgotten — the item works with the node's common token again.",
+    ownWriteYes: "Repository {repo}: the token can write.",
+    ownWriteNo: "Repository {repo}: the token can NOT write — uploading will fail.",
+    ownRepoInvisible: "Repository {repo} is not visible to this token (no repository or no access).",
     push: "Send to GitHub",
     pushing: "Sending…",
     pushHelp: "Sends the element's committed history to the branch main of the repository. Nothing is sent by itself — only by this button. The repository should be empty or already hold this element's history.",
@@ -163,6 +192,7 @@ const DICT: Record<string, ElementGithubUi> = {
       "same-repo": "This is already this item's repository.",
       "bad-repo": "Write the repository as owner/name or as its GitHub address.",
       "bad-token-shape": "This does not look like a GitHub token (github_pat_… or ghp_…).",
+      "no-own-token": "This item has no own token saved — it works with the node's common token.",
       "no-token": "The node has no GitHub token yet — add the node's token (Build → GitHub of the node) or type this item's own token.",
       "token-rejected": "GitHub does not accept this token.",
       "no-write": "GitHub does not let this token write to the repository (a trial push answered 403). Create a classic token with the «repo» box under the account that owns the repository (point 2) and paste it.",
@@ -234,6 +264,20 @@ const DICT: Record<string, ElementGithubUi> = {
     expires: "Токен действует до",
     noExpiry: "бессрочный",
     forget: "Забыть свой токен элемента",
+    ownTitle: "Свой токен элемента",
+    ownLead: "Необязательно. Без него элемент работает общим токеном узла. Свой токен нужен для репозитория в другом аккаунте GitHub или чтобы сузить доступ до одного репозитория: классический токен с галочками «repo» и «workflow».",
+    ownSaved: "Сохранён свой токен: …{tail}",
+    ownSave: "Сохранить и проверить",
+    ownSaving: "Спрашиваю GitHub…",
+    ownCheck: "Проверить доступ",
+    ownChecking: "Проверяю…",
+    ownForget: "Забыть токен",
+    ownSavedOk: "Сохранён и проверен: GitHub принимает токен (аккаунт {login}). Теперь этот элемент работает своим токеном.",
+    ownCheckedOk: "Токен работает: GitHub принимает его (аккаунт {login}).",
+    ownForgotOk: "Свой токен элемента забыт — элемент снова работает общим токеном узла.",
+    ownWriteYes: "Репозиторий {repo}: у токена есть право записи.",
+    ownWriteNo: "Репозиторий {repo}: у токена НЕТ права записи — выгрузка не пройдёт.",
+    ownRepoInvisible: "Репозиторий {repo} этому токену не виден (его нет или нет доступа).",
     push: "Отправить в GitHub",
     pushing: "Отправляю…",
     pushHelp: "Отправляет закоммиченную историю элемента в ветку main репозитория. Сам узел ничего не отправляет — только эта кнопка. Репозиторий должен быть пустым или уже хранить историю этого элемента.",
@@ -271,6 +315,7 @@ const DICT: Record<string, ElementGithubUi> = {
       "same-repo": "Это и есть репозиторий этого элемента.",
       "bad-repo": "Укажите репозиторий как владелец/имя или его адресом на GitHub.",
       "bad-token-shape": "Это не похоже на токен GitHub (github_pat_… или ghp_…).",
+      "no-own-token": "Своего токена у элемента нет — он работает общим токеном узла.",
       "no-token": "У узла ещё нет токена GitHub — добавьте токен узла («Строительство → GitHub» узла) или введите свой токен элемента.",
       "token-rejected": "GitHub не принимает этот токен.",
       "no-write": "GitHub не даёт этому токену писать в репозиторий (пробная отправка — 403). Создайте классический токен с галочкой «repo» под аккаунтом-владельцем репозитория (пункт 2) и вставьте его.",

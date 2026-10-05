@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { Check, ExternalLink, KeyRound, TriangleAlert, X } from "lucide-react"
+import { Check, CircleCheck, ExternalLink, KeyRound, TriangleAlert, X } from "lucide-react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -77,6 +77,9 @@ export function GithubBinding({ lang, words, connect }: { lang: string; words: G
   const [token, setToken] = useState("")
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // 401 (владелец 2026-10-05: «карточку которая подтверждает успех или провал оформить именно как карточку с бордюром и фоновой
+  // подсветкой зелёной или красной … сейчас это просто текст с маленькой зелёной галочкой»): итог последнего нажатия.
+  const [result, setResult] = useState<{ tone: "ok" | "error"; text: string } | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -97,6 +100,7 @@ export function GithubBinding({ lang, words, connect }: { lang: string; words: G
     async (action: "save" | "check" | "forget", extra: Record<string, unknown> = {}) => {
       setBusy(action)
       setError(null)
+      setResult(null)
       try {
         const res = await fetch(`${api}/key`, {
           method: "POST",
@@ -107,6 +111,11 @@ export function GithubBinding({ lang, words, connect }: { lang: string; words: G
         if (data.error) setError(words.errors[data.error] ?? words.errors.network)
         if (action === "forget") setAccess(null)
         else if (data.ok) setAccess(data)
+        if (action === "forget" && !data.error) setResult({ tone: "ok", text: words.resultForgot })
+        else if (data.ok && (data.canRead === false || data.canWrite === false))
+          setResult({ tone: "error", text: `${(action === "save" ? words.resultSaved : words.resultChecked).replace("{login}", data.login ?? "—")} ${data.canRead === false ? words.errors["repo-invisible"] ?? "" : words.writeDenied}` })
+        else if (data.ok) setResult({ tone: "ok", text: (action === "save" ? words.resultSaved : words.resultChecked).replace("{login}", data.login ?? "—") })
+        else setResult({ tone: "error", text: words.errors[data.error ?? ""] ?? words.errors.network })
         if (data.token) setState((prev) => (prev && prev !== "forbidden" ? { ...prev, token: data.token! } : prev))
         else load()
       } catch {
@@ -270,6 +279,16 @@ export function GithubBinding({ lang, words, connect }: { lang: string; words: G
             </>
           )}
         </div>
+        {result && (
+          <div
+            className={`flex items-start gap-2 rounded-md border-2 px-3 py-2.5 text-sm font-medium text-foreground ${result.tone === "ok" ? "border-success/50 bg-success/10" : "border-destructive/60 bg-destructive/10"}`}
+            role={result.tone === "ok" ? "status" : "alert"}
+            data-key-result={result.tone}
+          >
+            {result.tone === "ok" ? <CircleCheck className="mt-0.5 size-5 shrink-0 text-success" aria-hidden /> : <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />}
+            <p>{result.text}</p>
+          </div>
+        )}
       </section>
 
       {/* ── что умеет ключ ─────────────────────────────────────────────────── */}
@@ -314,10 +333,11 @@ export function GithubBinding({ lang, words, connect }: { lang: string; words: G
         )}
       </section>
 
-      {error && (
-        <p className="rounded-lg border border-destructive/40 px-4 py-3 text-destructive text-sm" role="status" data-github-error>
-          {error}
-        </p>
+      {error && !result && (
+        <div className="flex items-start gap-2 rounded-md border-2 border-destructive/60 bg-destructive/10 px-3 py-2.5 text-sm font-medium text-foreground" role="alert" data-github-error>
+          <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
+          <p>{error}</p>
+        </div>
       )}
     </div>
   )

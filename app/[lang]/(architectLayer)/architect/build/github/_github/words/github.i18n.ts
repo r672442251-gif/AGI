@@ -55,6 +55,10 @@ export type GithubWords = {
   saving: string
   saved: string
   forget: string
+  // 401: итог нажатия — карточкой с рамкой и подсветкой (зелёная — принят, красная — отказ).
+  resultSaved: string
+  resultChecked: string
+  resultForgot: string
   check: string
   checking: string
   openTokens: string
@@ -121,6 +125,9 @@ const DICT: Record<string, GithubWords> = {
     saving: "Asking GitHub…",
     saved: "Token saved · …{tail}",
     forget: "Forget the token",
+    resultSaved: "Saved and checked: GitHub accepts the token (account {login}).",
+    resultChecked: "The token works: GitHub accepts it (account {login}).",
+    resultForgot: "The token is forgotten — the node has no GitHub token now.",
     check: "Check access",
     checking: "Checking…",
     openTokens: "Open the token page",
@@ -196,6 +203,9 @@ const DICT: Record<string, GithubWords> = {
     saving: "Спрашиваю GitHub…",
     saved: "Токен сохранён · …{tail}",
     forget: "Забыть токен",
+    resultSaved: "Сохранён и проверен: GitHub принимает токен (аккаунт {login}).",
+    resultChecked: "Токен работает: GitHub принимает его (аккаунт {login}).",
+    resultForgot: "Токен забыт — у узла больше нет токена GitHub.",
     check: "Проверить доступ",
     checking: "Проверяю…",
     openTokens: "Открыть страницу токенов",
