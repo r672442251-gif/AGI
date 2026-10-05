@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { OpenOnThisComputerButton } from "@/components/node-state/open-on-this-computer.client"
 import { isLoopbackHostname } from "@/lib/auth/owner-at-machine"
-import { CircleHelp, Copy, ExternalLink, Highlighter, PanelRightClose, RefreshCw, Search, SquareTerminal } from "lucide-react"
+import { CircleHelp, Copy, ExternalLink, Globe, Highlighter, Monitor, PanelRightClose, RefreshCw, Search, SquareTerminal } from "lucide-react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -326,13 +326,20 @@ export function ElementPreview({ serviceId, terminalService, lang, words, task, 
               </Button>
             </PopoverTrigger>
             <PopoverContent align="start" className="flex w-72 flex-col gap-1 p-2" data-preview-open-menu>
-              <a href={`${BASE}${devHref}`} className="rounded-md px-2 py-1.5 text-sm hover:bg-muted" data-preview-open-dev>
-                {words.openDev}
-                <span className="block text-xs text-muted-foreground">{words.openDevHint}</span>
+              <a href={`${BASE}${devHref}`} className="flex gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted" data-preview-open-dev>
+                {/* 399 (владелец 2026-10-05): слева иконка — компьютер у режима разработки, глобус у продакшна. */}
+                <Monitor className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0">
+                  {words.openDev}
+                  <span className="block text-xs text-muted-foreground">{words.openDevHint}</span>
+                </span>
               </a>
-              <a href={publicPage ?? page} target="_blank" rel="noopener noreferrer" className="rounded-md px-2 py-1.5 text-sm hover:bg-muted" data-preview-open-prod>
-                {words.openProd}
-                <span className="block break-all font-mono text-xs text-muted-foreground">{new URL(publicPage ?? page).host}</span>
+              <a href={publicPage ?? page} target="_blank" rel="noopener noreferrer" className="flex gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted" data-preview-open-prod>
+                <Globe className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0">
+                  {words.openProd}
+                  <span className="block break-all font-mono text-xs text-muted-foreground">{new URL(publicPage ?? page).host}</span>
+                </span>
               </a>
             </PopoverContent>
           </Popover>
