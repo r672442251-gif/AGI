@@ -20,6 +20,7 @@ import { createRequire } from 'node:module'
 import paths from '../lib/agi-items/paths.cjs'
 import deployLock from '../lib/deploy/deploy-lock.cjs'
 import { elementLanguages } from '../lib/agi-items/element-languages.mjs'
+import { dropStaleTypes } from '../lib/deploy/stale-types.mjs'
 
 const require = createRequire(import.meta.url)
 const { isFree, PORT_BLOCK_START, blockPorts } = require('../lib/server-port.cjs')
@@ -134,6 +135,8 @@ if (action === 'stage') {
   const t0 = Date.now()
   save({ state: 'building', pid: process.pid, target, commit, startedAt: new Date().toISOString() })
   try { rmSync(join(dir, target), { recursive: true, force: true }) } catch { /* next build очистит */ }
+  // 402: типы работающей сборки не должны проверяться новой (lib/deploy/stale-types.mjs).
+  dropStaleTypes(dir, target)
   const buildEnv = { [distEnv]: target, ...languagesEnv() }
   // 353-3: ход сборки — в `logs/preview-<id>.log` по мере работы; страница читает хвост, пока идёт сборка.
   const liveLog = require('../lib/deploy/live-log.cjs')

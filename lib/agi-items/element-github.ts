@@ -176,6 +176,37 @@ export function forgetElementToken(id: string) {
   rmSync(tokenFile(id), { force: true })
 }
 
+// 401 (владелец 2026-10-05: «пытаюсь добавить собственный ключ тогда, когда основной ключ уже добавлен, но кнопка сохранить
+// новый ключ не появляется … скопируй один-к-одному»): свой токен элемента живёт отдельно от репозитория — те же три действия,
+// что у токена узла (`build/github/api/key`): сохранить и проверить, проверить доступ, забыть. ✗ До 401 свой токен вводился
+// только вместе с репозиторием, и без репозитория кнопка была неактивна.
+export type ElementTokenAccess = { login: string | null; expires: string | null; repo: string | null; canRead: boolean | null; canWrite: boolean | null }
+type AccessAnswer = { ok: boolean; error?: string; login?: string | null; expires?: string | null; repo?: string | null; canRead?: boolean | null; canWrite?: boolean | null }
+const accessOf = (a: AccessAnswer): ElementTokenAccess => ({ login: a.login ?? null, expires: a.expires ?? null, repo: a.repo ?? null, canRead: a.canRead ?? null, canWrite: a.canWrite ?? null })
+
+/** Проверить у GitHub и сохранить свой токен элемента. Токен, которого GitHub не узнаёт, не хранится (как у узла). */
+export async function saveElementToken(id: string, raw: string) {
+  const token = raw.trim()
+  if (!token) return { ok: false as const, error: "no-token" }
+  if (!SHAPE.test(token)) return { ok: false as const, error: "bad-token-shape" }
+  const where = parseRepo(readStored(id).repo ?? "")
+  const a = (await checkAccess(token, where?.owner, where?.repo)) as AccessAnswer
+  if (!a.ok) return { ok: false as const, error: a.error ?? "github-refused" }
+  mkdirSync(dataDir(id), { recursive: true })
+  writeFileSync(tokenFile(id), `${KEY}${token}\n`, { mode: 0o600 })
+  try { chmodSync(tokenFile(id), 0o600) } catch { /* Windows: права файла задаёт профиль пользователя */ }
+  return { ok: true as const, access: accessOf(a) }
+}
+
+/** Спросить GitHub о сохранённом своём токене элемента (кнопка «Проверить доступ»). */
+export async function checkElementToken(id: string) {
+  const token = readToken(id)
+  if (!token) return { ok: false as const, error: "no-own-token" }
+  const where = parseRepo(readStored(id).repo ?? "")
+  const a = (await checkAccess(token, where?.owner, where?.repo)) as AccessAnswer
+  return a.ok ? { ok: true as const, access: accessOf(a) } : { ok: false as const, error: a.error ?? "github-refused" }
+}
+
 /** Выгрузить папку элемента в его репозиторий. `commit` — сначала закоммитить правки (кнопка человека). */
 export function pushElement(id: string, commit: boolean) {
   const dir = elementDir(id)

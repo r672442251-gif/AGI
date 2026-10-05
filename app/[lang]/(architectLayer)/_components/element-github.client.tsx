@@ -1,10 +1,11 @@
 "use client"
 
 import { useCallback, useEffect, useState, type ReactNode } from "react"
-import { CircleCheck, CircleHelp, GitBranch, TriangleAlert, Upload } from "lucide-react"
+import { Check, CircleCheck, CircleHelp, GitBranch, KeyRound, TriangleAlert, Upload, X } from "lucide-react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { H4 } from "@/components/ui/typography"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { ElementGithubUi } from "../_i18n/element-github.i18n"
@@ -51,7 +52,6 @@ function Help({ text }: { text: string }) {
 export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: ElementGithubUi }) {
   const [s, setS] = useState<State | null>(null)
   const [repo, setRepo] = useState("")
-  const [token, setToken] = useState("")
   const [busy, setBusy] = useState<"connect" | "push" | "rename" | null>(null)
   // 384-6 (владелец 2026-10-03: «почему эта ответ … находится под второй карточкой хотя я вопрос задавал первой карточке»): у итога —
   // адрес карточки, где нажата кнопка; показывается плашкой там же.
@@ -59,6 +59,10 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
   const [message, setMessageRaw] = useState<{ tone: "ok" | "error"; text: string; where: Where } | null>(null)
   const setMessage = (m: { tone: "ok" | "error"; text: string; where?: Where } | null) => setMessageRaw(m ? { ...m, where: m.where ?? "connect" } : null)
   const [renameTo, setRenameTo] = useState("")
+  // 401: свой токен элемента — поле, ход нажатия и итог карточкой (зелёная — принят, красная — отказ).
+  const [ownToken, setOwnToken] = useState("")
+  const [ownBusy, setOwnBusy] = useState<"save" | "check" | "forget" | null>(null)
+  const [ownResult, setOwnResult] = useState<{ tone: "ok" | "error"; lines: string[] } | null>(null)
   const [dirtyBlock, setDirtyBlock] = useState<number | null>(null)
   const url = `${BASE}/api/architect/items/${id}/github`
   // 374-6: импорт на место элемента — поля, подтверждение, ход (спрашивается кнопкой, таймеров нет).
@@ -134,12 +138,11 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
     setBusy("connect")
     setMessage(null)
     try {
-      const { status, body: d } = await call(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ repo, token }) })
+      const { status, body: d } = await call(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ repo, token: "" }) })
       if (!d) setMessage({ tone: "error", text: network(status) })
       else if (d.ok) {
         const next = d as unknown as State
         setS(next)
-        setToken("")
         const source = next.tokenSource === "element" ? ui.tokenOwnShort : ui.tokenNodeShort
         setMessage({ tone: "ok", text: ui.connectOk.replace("{source}", source.replace("{tail}", next.activeTail ?? "")).replaceAll("{repo}", next.repo ?? "") })
         announceGithubState()
@@ -148,10 +151,30 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
     } finally { setBusy(null) }
   }
 
-  async function forget() {
-    const { status, body } = await call(url, { method: "DELETE" })
-    if (body?.ok) setS(body as unknown as State)
-    else setMessage({ tone: "error", text: body ? err(body.error) : network(status) })
+  // 401: те же три действия, что у токена узла; после каждого — полоса над слоем спрашивает дверь заново.
+  type OwnAccess = { login: string | null; repo: string | null; canRead: boolean | null; canWrite: boolean | null }
+  async function own(action: "save" | "check" | "forget") {
+    const value = ownToken.trim()
+    if (action === "save") setOwnToken("") // секрет живёт в поле ровно до отправки
+    setOwnBusy(action)
+    setOwnResult(null)
+    try {
+      const { status, body: d } = await call(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(action === "save" ? { action, token: value } : { action }) })
+      if (!d) { setOwnResult({ tone: "error", lines: [network(status)] }); return }
+      if (d.state) setS(d.state as State)
+      if (!d.ok) { setOwnResult({ tone: "error", lines: [err(d.error)] }); return }
+      if (action === "forget") { setOwnResult({ tone: "ok", lines: [ui.ownForgotOk] }); return }
+      const a = d.access as OwnAccess
+      const lines = [(action === "save" ? ui.ownSavedOk : ui.ownCheckedOk).replace("{login}", a.login ?? "—")]
+      let tone: "ok" | "error" = "ok"
+      if (a.repo && a.canRead === false) { lines.push(ui.ownRepoInvisible.replace("{repo}", a.repo)); tone = "error" }
+      else if (a.repo && a.canWrite === false) { lines.push(ui.ownWriteNo.replace("{repo}", a.repo)); tone = "error" }
+      else if (a.repo && a.canWrite === true) lines.push(ui.ownWriteYes.replace("{repo}", a.repo))
+      setOwnResult({ tone, lines })
+    } finally {
+      setOwnBusy(null)
+      announceGithubState()
+    }
   }
 
   async function push(commit: boolean) {
@@ -291,6 +314,54 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
           </div>
         )}
 
+        {/* 401: свой токен элемента — копия карточки токена узла («Строительство → GitHub» узла): три кнопки и итог карточкой. */}
+        <section className="flex flex-col gap-3 rounded-lg border border-border p-3" data-element-github-own>
+          <H4 variant="ui">{ui.ownTitle}</H4>
+          <p className="text-sm text-muted-foreground">{ui.ownLead}</p>
+          {active}
+          {s?.tokenTail && (
+            <p className="flex items-center gap-2 text-sm" data-element-github-own-saved>
+              <KeyRound className="size-4" aria-hidden />
+              {ui.ownSaved.replace("{tail}", s.tokenTail)}
+            </p>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1">
+              <Label htmlFor={`gh-token-${id}`}>{ui.tokenLabel}</Label>
+              <Help text={ui.tokenHelp} />
+            </div>
+            <Input id={`gh-token-${id}`} type="password" value={ownToken} onChange={(e) => setOwnToken(e.target.value)} placeholder={ui.tokenPlaceholder} autoComplete="off" spellCheck={false} className="font-mono" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" disabled={ownBusy !== null || !ownToken.trim()} onClick={() => void own("save")} data-element-github-own-save>
+              {ownBusy === "save" ? <Spinner className="size-4" /> : <KeyRound className="size-4" aria-hidden />}
+              {ownBusy === "save" ? ui.ownSaving : ui.ownSave}
+            </Button>
+            {s?.tokenTail && (
+              <>
+                <Button type="button" variant="outline" disabled={ownBusy !== null} onClick={() => void own("check")} data-element-github-own-check>
+                  {ownBusy === "check" ? <Spinner className="size-4" /> : <Check className="size-4" aria-hidden />}
+                  {ownBusy === "check" ? ui.ownChecking : ui.ownCheck}
+                </Button>
+                <Button type="button" variant="ghost" disabled={ownBusy !== null} onClick={() => void own("forget")} data-element-github-own-forget>
+                  <X className="size-4" aria-hidden />
+                  {ui.ownForget}
+                </Button>
+              </>
+            )}
+          </div>
+          {ownResult && (
+            <div
+              className={`flex items-start gap-2 rounded-md border-2 px-3 py-2.5 text-sm font-medium text-foreground ${ownResult.tone === "ok" ? "border-success/50 bg-success/10" : "border-destructive/60 bg-destructive/10"}`}
+              role={ownResult.tone === "ok" ? "status" : "alert"}
+              data-element-github-own-result={ownResult.tone}
+            >
+              {ownResult.tone === "ok" ? <CircleCheck className="mt-0.5 size-5 shrink-0 text-success" aria-hidden /> : <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />}
+              <div className="flex flex-col gap-1">{ownResult.lines.map((l, i) => <p key={i}>{l}</p>)}</div>
+            </div>
+          )}
+        </section>
+
         <section className="flex flex-col gap-3 rounded-lg border border-border p-3" data-element-github-other>
           <div className="flex items-center gap-1">
             <H4 variant="ui">{ui.otherTitle}</H4>
@@ -318,25 +389,16 @@ export function ElementGithub({ id, lang, ui }: { id: string; lang: string; ui: 
               <Input id={`gh-repo-${id}`} value={repo} onChange={(e) => setRepo(e.target.value)} placeholder={ui.repoPlaceholder} autoComplete="off" spellCheck={false} className="font-mono" />
             </div>
             {active}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-1">
-                <Label htmlFor={`gh-token-${id}`}>{ui.tokenLabel}</Label>
-                <Help text={ui.tokenHelp} />
-              </div>
-              <Input id={`gh-token-${id}`} type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder={ui.tokenPlaceholder} autoComplete="off" spellCheck={false} className="font-mono" />
-            </div>
             <Button type="submit" variant="outline" className="w-fit gap-1.5" disabled={!repo.trim() || busy !== null} data-element-github-connect-button>
               <GitBranch className="size-4" aria-hidden />
               {busy === "connect" ? ui.connecting : ui.connect}
             </Button>
           </form>
           {note("connect")}
-          {s?.tokenTail && (
+          {s?.login && (
             <div className="flex flex-col gap-1 rounded-lg border border-border p-3" data-element-github-state>
-              {s.login && row(ui.account, s.login)}
-              {row(ui.keyTail, `…${s.tokenTail}`)}
+              {row(ui.account, s.login)}
               {row(ui.expires, s.expires ?? ui.noExpiry)}
-              <Button type="button" variant="ghost" size="sm" className="mt-1 w-fit" onClick={forget}>{ui.forget}</Button>
             </div>
           )}
         </section>
