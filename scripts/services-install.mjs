@@ -42,6 +42,7 @@ import { createRequire } from 'node:module'
 import paths from '../lib/agi-items/paths.cjs'
 import { addressOf } from '../lib/agi-items/address-file.mjs'
 import { elementLanguages } from '../lib/agi-items/element-languages.mjs'
+import { dropStaleTypes } from '../lib/deploy/stale-types.mjs'
 
 const require = createRequire(import.meta.url)
 const { isFree, PORT_BLOCK_START, PORT_BLOCK_END, blockPorts, isBlockPort } = require('../lib/server-port.cjs')
@@ -912,6 +913,8 @@ for (const entry of registry.services) {
         const target = current === '.next-a' ? '.next-b' : '.next-a'
         // Папка прошлой-прошлой сборки: обычно уже свободна; занята — next build очистит её сам.
         try { rmSync(join(dir, target), { recursive: true, force: true }) } catch { /* next build очистит */ }
+        // 402: типы работающей сборки не должны проверяться новой (lib/deploy/stale-types.mjs).
+        dropStaleTypes(dir, target)
         let bg = run('npm', ['run', 'build'], dir, { env: { [distEnv]: target } })
         if (bg.rc !== 0) {
           say('  сборка упала — повторяю один раз')
